@@ -1,0 +1,97 @@
+<?php
+
+namespace App\Controllers\Admin;
+
+use App\Controllers\BaseController;
+use App\Models\KelasModel; // Panggil model
+use App\Models\TahunAjaranModel; // 1. Panggil model TahunAjaran
+
+class KelasController extends BaseController
+{
+    /**
+     * Halaman utama untuk menampilkan daftar kelas.
+     */
+    public function index()
+    {
+        $model = new KelasModel();
+
+        // Mengambil data dengan JOIN
+        $data['classes'] = $model->select('classes.id, classes.name, academic_years.year as academic_year')
+                                ->join('academic_years', 'academic_years.id = classes.academic_year_id')
+                                ->orderBy('classes.id', 'DESC')
+                                ->findAll();
+
+        return view('pages/kelas/index', $data);
+    }
+
+    // Method lainnya kita biarkan dulu
+    public function new() {
+        $tahunAjaranModel = new TahunAjaranModel();
+        // 2. Ambil semua tahun ajaran untuk dropdown
+        $data['academicYears'] = $tahunAjaranModel->orderBy('year', 'DESC')->findAll();
+        
+        return view('pages/kelas/form', $data);
+    }
+    public function create() {  $rules = [
+            'name' => 'required',
+            'academic_year_id' => 'required|is_not_unique[academic_years.id]'
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+        
+        // Simpan data
+        $model = new KelasModel();
+        $model->save([
+            'name'              => $this->request->getPost('name'),
+            'academic_year_id'  => $this->request->getPost('academic_year_id'),
+        ]);
+
+        return redirect()->to('admin/kelas')->with('success', 'Data Kelas berhasil ditambahkan!'); }
+    public function edit($id = null) { 
+        $kelasModel = new KelasModel();
+        $tahunAjaranModel = new TahunAjaranModel();
+
+        $data = [
+            'classData'     => $kelasModel->find($id),
+            'academicYears' => $tahunAjaranModel->orderBy('year', 'DESC')->findAll(),
+        ];
+
+        if (empty($data['classData'])) {
+            throw new \CodeIgniter\Exceptions\PageNotFoundException('Data Kelas tidak ditemukan.');
+        }
+
+        return view('pages/kelas/form', $data);
+     }
+    public function update($id = null) { 
+        $rules = [
+            'name' => 'required',
+            'academic_year_id' => 'required|is_not_unique[academic_years.id]'
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        $model = new KelasModel();
+        $model->update($id, [
+            'name'              => $this->request->getPost('name'),
+            'academic_year_id'  => $this->request->getPost('academic_year_id'),
+        ]);
+
+        return redirect()->to('admin/kelas')->with('success', 'Data Kelas berhasil diperbarui!');
+     }
+    public function delete($id = null) { 
+        $model = new KelasModel();
+        
+        $data = $model->find($id);
+        if ($data) {
+            $model->delete($id);
+            return redirect()->to('admin/kelas')->with('success', 'Data Kelas berhasil dihapus!');
+        }
+        
+        return redirect()->to('admin/kelas')->with('error', 'Data Kelas tidak ditemukan.');
+     }
+    public function show($id = null) { /* ... */ }
+}

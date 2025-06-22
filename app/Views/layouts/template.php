@@ -17,6 +17,9 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.tailwindcss.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
+
   <style>
     /* Simple styling for scrollbar if needed */
     ::-webkit-scrollbar {
@@ -45,6 +48,17 @@
       </main>
     </div>
   </div>
+
+
+  <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+  <script src="https://cdn.datatables.net/2.0.8/js/dataTables.js"></script>
+  <script src="https://cdn.datatables.net/2.0.8/js/dataTables.tailwindcss.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+
+  <?= $this->renderSection('scripts') ?>
+
+  <?= $this->include('layouts/notifications') ?>
 
 </body>
 
