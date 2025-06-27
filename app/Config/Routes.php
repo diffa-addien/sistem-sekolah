@@ -7,19 +7,13 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 
-$routes->get('/dashboard', 'Dashboard::index');
-
-// Rute untuk manajemen siswa (menggunakan Siswa.php)
-$routes->get('/daftar-siswa', 'Siswa::daftarSiswa');
-$routes->get('/tambah-siswa', 'Siswa::tambahSiswa');
-
 /*
  * --------------------------------------------------------------------
  * Admin Routes
  * --------------------------------------------------------------------
  */
 $routes->group('admin', static function ($routes) {
-    $routes->get('dashboard', 'Dashboard::index');
+    $routes->get('dashboard', 'Admin\Dashboard::index');
 
     // Pakai Auto Method
     $routes->resource('tahun-ajaran', [
