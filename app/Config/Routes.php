@@ -19,6 +19,8 @@ $routes->get('/tambah-siswa', 'Siswa::tambahSiswa');
  * --------------------------------------------------------------------
  */
 $routes->group('admin', static function ($routes) {
+    $routes->get('dashboard', 'Dashboard::index');
+
     // Pakai Auto Method
     $routes->resource('tahun-ajaran', [
         'controller' => '\App\Controllers\Admin\TahunAjaranController'
@@ -44,4 +46,7 @@ $routes->group('admin', static function ($routes) {
     $routes->resource('kegiatan', [
         'controller' => '\App\Controllers\Admin\KegiatanController'
     ]);
+
+    $routes->get('kenaikan-kelas', 'Admin\KenaikanKelasController::index');
+    $routes->post('kenaikan-kelas/proses', 'Admin\KenaikanKelasController::process');
 });
