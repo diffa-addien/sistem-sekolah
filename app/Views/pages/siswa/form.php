@@ -139,7 +139,7 @@
             const pollingInterval = setInterval(function () {
                 attempts++;
                 $.ajax({
-                    url: "<?= site_url('api/getUid') ?>",
+                    url: "<?= site_url('api/check-scan') ?>",
                     method: "GET",
                     dataType: "json",
                     success: function (response) {
