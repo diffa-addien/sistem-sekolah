@@ -44,3 +44,13 @@ $routes->group('admin', static function ($routes) {
     $routes->get('kenaikan-kelas', 'Admin\KenaikanKelasController::index');
     $routes->post('kenaikan-kelas/proses', 'Admin\KenaikanKelasController::process');
 });
+
+// Rute untuk API
+$routes->group('api', static function ($routes) {
+    // Endpoint utama yang dipanggil Arduino setiap kali ada tap kartu
+    $routes->post('tap', 'Api::processTap');
+
+    // Endpoint yang digunakan untuk mekanisme 'scan' pada form web
+    $routes->post('store-scan', 'Api::storeScannedUid');
+    $routes->get('check-scan', 'Api::checkScannedUid');
+});

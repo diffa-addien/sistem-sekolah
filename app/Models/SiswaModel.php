@@ -18,6 +18,7 @@ class SiswaModel extends Model
         'class_id',
         'user_id',
         'nis',
+        'card_uid',
         'full_name',
         'gender',
         'birth_date',

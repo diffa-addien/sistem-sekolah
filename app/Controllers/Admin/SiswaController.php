@@ -43,13 +43,14 @@ class SiswaController extends BaseController
     public function create()
     {
         $rules = [
-            'nis'       => 'required|is_unique[students.nis]',
+            'nis' => 'required|is_unique[students.nis]',
             'full_name' => 'required',
-            'class_id'  => 'required|is_not_unique[classes.id]',
-            'gender'    => 'required|in_list[Laki-laki,Perempuan]',
+            'class_id' => 'required|is_not_unique[classes.id]',
+            'gender' => 'required|in_list[Laki-laki,Perempuan]',
             'birth_date' => 'required',
-            'user_id'   => 'permit_empty|is_not_unique[users.id]',
-            'photo'     => 'max_size[photo,1024]|is_image[photo]|mime_in[photo,image/jpg,image/jpeg,image/png]'
+            'user_id' => 'permit_empty|is_not_unique[users.id]',
+            'card_uid' => 'permit_empty|is_unique[students.card_uid]', // UID boleh kosong, tapi jika diisi harus unik
+            'photo' => 'max_size[photo,1024]|is_image[photo]|mime_in[photo,image/jpg,image/jpeg,image/png]'
         ];
 
         if (!$this->validate($rules)) {
@@ -68,13 +69,14 @@ class SiswaController extends BaseController
         // 3. Simpan data ke database
         $model = new SiswaModel();
         $model->save([
-            'nis'        => $this->request->getPost('nis'),
-            'full_name'  => $this->request->getPost('full_name'),
-            'class_id'   => $this->request->getPost('class_id'),
-            'user_id'    => $this->request->getPost('user_id') ?: null, // Simpan NULL jika kosong
-            'gender'     => $this->request->getPost('gender'),
+            'nis' => $this->request->getPost('nis'),
+            'full_name' => $this->request->getPost('full_name'),
+            'class_id' => $this->request->getPost('class_id'),
+            'user_id' => $this->request->getPost('user_id') ?: null, // Simpan NULL jika kosong
+            'card_uid' => $this->request->getPost('card_uid')?: null,
+            'gender' => $this->request->getPost('gender'),
             'birth_date' => $this->request->getPost('birth_date'),
-            'photo'      => $photoName,
+            'photo' => $photoName,
         ]);
 
         return redirect()->to('admin/siswa')->with('success', 'Data Siswa berhasil ditambahkan!');
@@ -106,17 +108,15 @@ class SiswaController extends BaseController
         $siswaModel = new SiswaModel();
         $oldStudentData = $siswaModel->find($id);
 
-        // Aturan validasi NIS: unik, tapi abaikan entri saat ini
-        $nisRule = ($this->request->getPost('nis') == $oldStudentData['nis']) ? 'required' : 'required|is_unique[students.nis]';
-
         $rules = [
-            'nis'       => $nisRule,
+            'nis'       => "required|is_unique[students.nis,id,{$id}]",
+            'card_uid'  => "permit_empty|is_unique[students.card_uid,id,{$id}]", // !! PERUBAHAN: Mengabaikan ID saat ini
             'full_name' => 'required',
             'class_id'  => 'required|is_not_unique[classes.id]',
             'gender'    => 'required|in_list[Laki-laki,Perempuan]',
             'birth_date' => 'required',
-            'user_id'   => 'permit_empty|is_not_unique[users.id]',
-            'photo'     => 'max_size[photo,1024]|is_image[photo]|mime_in[photo,image/jpg,image/jpeg,image/png]'
+            'user_id' => 'permit_empty|is_not_unique[users.id]',
+            'photo' => 'max_size[photo,1024]|is_image[photo]|mime_in[photo,image/jpg,image/jpeg,image/png]'
         ];
 
         if (!$this->validate($rules)) {
@@ -139,13 +139,14 @@ class SiswaController extends BaseController
 
         // Siapkan data untuk update
         $dataToUpdate = [
-            'nis'        => $this->request->getPost('nis'),
-            'full_name'  => $this->request->getPost('full_name'),
-            'class_id'   => $this->request->getPost('class_id'),
-            'user_id'    => $this->request->getPost('user_id') ?: null,
-            'gender'     => $this->request->getPost('gender'),
+            'nis' => $this->request->getPost('nis'),
+            'full_name' => $this->request->getPost('full_name'),
+            'class_id' => $this->request->getPost('class_id'),
+            'user_id' => $this->request->getPost('user_id') ?: null,
+            'card_uid' => $this->request->getPost('card_uid') ?: null,
+            'gender' => $this->request->getPost('gender'),
             'birth_date' => $this->request->getPost('birth_date'),
-            'photo'      => $photoName,
+            'photo' => $photoName,
         ];
 
         $siswaModel->update($id, $dataToUpdate);
@@ -176,5 +177,7 @@ class SiswaController extends BaseController
 
         return redirect()->to('admin/siswa')->with('error', 'Data Siswa tidak ditemukan.');
     }
-    public function show($id = null) {}
+    public function show($id = null)
+    {
+    }
 }

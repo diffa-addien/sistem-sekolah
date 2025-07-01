@@ -22,16 +22,29 @@ class ActivityNameController extends BaseController
 
     public function create()
     {
+        $model = new ActivityNameModel();
+        $type = $this->request->getPost('type');
+
+        // Aturan validasi dasar
         $rules = [
             'name' => 'required|is_unique[activity_names.name]',
-            'type' => 'required|in_list[Sekolah,Rumah]',
+            'type' => 'required|in_list[Sekolah,Rumah,Masuk,Pulang]',
+            'start_time' => 'permit_empty|regex_match[/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/]',
+            'end_time' => 'permit_empty|regex_match[/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/]|is_schedule_conflict[0]', // 0 = tidak ada id yg diabaikan
         ];
+
+        // Validasi tambahan untuk tipe Masuk/Pulang
+        if ($type === 'Masuk' || $type === 'Pulang') {
+            $existing = $model->where('type', $type)->first();
+            if ($existing) {
+                return redirect()->back()->withInput()->with('error', "Tipe '{$type}' hanya boleh ada satu.");
+            }
+        }
 
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        $model = new ActivityNameModel();
         $model->save($this->request->getPost());
         return redirect()->to('admin/nama-kegiatan')->with('success', 'Nama Kegiatan berhasil ditambahkan!');
     }
@@ -49,13 +62,21 @@ class ActivityNameController extends BaseController
     public function update($id = null)
     {
         $model = new ActivityNameModel();
-        $oldData = $model->find($id);
-        $nameRule = ($this->request->getPost('name') == $oldData['name']) ? 'required' : 'required|is_unique[activity_names.name]';
-        
+        $type = $this->request->getPost('type');
+
         $rules = [
-            'name' => $nameRule,
-            'type' => 'required|in_list[Sekolah,Rumah]',
+            'name' => "required|is_unique[activity_names.name,id,{$id}]",
+            'type' => 'required|in_list[Sekolah,Rumah,Masuk,Pulang]',
+            'start_time' => 'permit_empty|regex_match[/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/]',
+            'end_time' => "permit_empty|regex_match[/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/]|is_schedule_conflict[{$id}]", // Abaikan id saat ini
         ];
+
+        if ($type === 'Masuk' || $type === 'Pulang') {
+            $existing = $model->where('type', $type)->where('id !=', $id)->first();
+            if ($existing) {
+                return redirect()->back()->withInput()->with('error', "Tipe '{$type}' hanya boleh ada satu.");
+            }
+        }
 
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
@@ -74,8 +95,7 @@ class ActivityNameController extends BaseController
                 return redirect()->to('admin/nama-kegiatan')->with('success', 'Nama Kegiatan berhasil dihapus!');
             }
         } catch (DatabaseException $e) {
-            // Tangani error foreign key constraint
-            return redirect()->to('admin/nama-kegiatan')->with('error', 'Nama Kegiatan tidak dapat dihapus karena sudah digunakan dalam catatan kegiatan siswa.');
+            return redirect()->to('admin/nama-kegiatan')->with('error', 'Nama Kegiatan tidak dapat dihapus karena sudah digunakan.');
         }
         return redirect()->to('admin/nama-kegiatan')->with('error', 'Nama Kegiatan tidak ditemukan.');
     }

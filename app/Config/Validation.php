@@ -25,6 +25,8 @@ class Validation extends BaseConfig
         FormatRules::class,
         FileRules::class,
         CreditCardRules::class,
+        \App\Validation\CustomRules::class, // <-- Custom Validation for Kegiatan
+
     ];
 
     /**
@@ -36,7 +38,7 @@ class Validation extends BaseConfig
     public array $templates = [
         'list'   => 'CodeIgniter\Validation\Views\list',
         'single' => 'CodeIgniter\Validation\Views\single',
-        'my_list' => 'errors/my_list', // Custom validation
+        'my_list' => 'errors/my_list', // Custom validation view
     ];
 
     // --------------------------------------------------------------------

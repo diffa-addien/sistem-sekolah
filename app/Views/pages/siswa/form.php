@@ -1,97 +1,173 @@
 <?= $this->extend('layouts/template') ?>
-
-<?= $this->section('title') ?>
-Form Siswa
-<?= $this->endSection() ?>
+<?= $this->section('title') ?>Form Siswa<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<div class="max-w-2xl mx-auto px-4 py-3 mb-8 bg-white rounded-lg shadow-md">
-    <h2 class="text-2xl font-semibold text-gray-700 mb-4">
-        <?= isset($student) ? 'Form Edit Siswa' : 'Form Tambah Siswa' ?>
+<div class="max-w-3xl mx-auto px-6 py-8 bg-white rounded-xl shadow-lg">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6">
+        <?= isset($student) ? 'Edit Siswa' : 'Tambah Siswa' ?>
     </h2>
 
-    <?php if (session('errors')) : ?>
-        <?= validation_list_errors('my_list') ?>
+    <?php if (session('errors')): ?>
+        <div class="mb-4 p-4 bg-red-50 text-red-700 rounded-lg">
+            <?= validation_list_errors('my_list') ?>
+        </div>
     <?php endif; ?>
 
-    <form action="<?= isset($student) ? site_url('admin/siswa/' . $student['id']) : site_url('admin/siswa') ?>" method="post" enctype="multipart/form-data">
+    <form action="<?= isset($student) ? site_url('admin/siswa/' . $student['id']) : site_url('admin/siswa') ?>"
+        method="post" enctype="multipart/form-data" class="space-y-6">
         <?= csrf_field() ?>
-        <?php if (isset($student)) : ?>
+        <?php if (isset($student)): ?>
             <input type="hidden" name="_method" value="PUT">
         <?php endif; ?>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <div class="mb-4">
-                    <label for="nis" class="block mb-2 text-sm font-medium">NIS</label>
-                    <input type="text" name="nis" value="<?= old('nis', $student['nis'] ?? '') ?>" class="input-field" required>
+            <div class="space-y-6">
+                <div>
+                    <label for="nis" class="block text-sm font-medium text-gray-700 mb-1">NIS</label>
+                    <input type="text" name="nis" value="<?= old('nis', $student['nis'] ?? '') ?>"
+                        class="w-full p-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-all"
+                        required>
                 </div>
-                <div class="mb-4">
-                    <label for="full_name" class="block mb-2 text-sm font-medium">Nama Lengkap</label>
-                    <input type="text" name="full_name" value="<?= old('full_name', $student['full_name'] ?? '') ?>" class="input-field" required>
+                <div>
+                    <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                    <input type="text" name="full_name" value="<?= old('full_name', $student['full_name'] ?? '') ?>"
+                        class="w-full p-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-all"
+                        required>
                 </div>
-                <div class="mb-4">
-                    <label for="birth_date" class="block mb-2 text-sm font-medium">Tanggal Lahir</label>
-                    <input type="date" name="birth_date" value="<?= old('birth_date', $student['birth_date'] ?? '') ?>" class="input-field" required>
+                <div>
+                    <label for="birth_date" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir</label>
+                    <input type="date" name="birth_date" value="<?= old('birth_date', $student['birth_date'] ?? '') ?>"
+                        class="w-full p-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-all"
+                        required>
                 </div>
-                <div class="mb-4">
-                    <label class="block mb-2 text-sm font-medium">Jenis Kelamin</label>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Kelamin</label>
                     <?php $gender = old('gender', $student['gender'] ?? ''); ?>
-                    <div class="flex items-center space-x-6">
-                        <div class="flex items-center">
-                            <input type="radio" value="Laki-laki" name="gender" class="radio-field" <?= $gender == 'Laki-laki' ? 'checked' : '' ?> required>
-                            <label class="ms-2 text-sm font-medium">Laki-laki</label>
-                        </div>
-                        <div class="flex items-center">
-                            <input type="radio" value="Perempuan" name="gender" class="radio-field" <?= $gender == 'Perempuan' ? 'checked' : '' ?>>
-                            <label class="ms-2 text-sm font-medium">Perempuan</label>
-                        </div>
+                    <div class="flex space-x-6">
+                        <label class="flex items-center">
+                            <input type="radio" value="Laki-laki" name="gender"
+                                class="w-4 h-4 text-blue-600 focus:ring-blue-500" <?= $gender == 'Laki-laki' ? 'checked' : '' ?> required>
+                            <span class="ml-2 text-sm text-gray-700">Laki-laki</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" value="Perempuan" name="gender"
+                                class="w-4 h-4 text-blue-600 focus:ring-blue-500" <?= $gender == 'Perempuan' ? 'checked' : '' ?>>
+                            <span class="ml-2 text-sm text-gray-700">Perempuan</span>
+                        </label>
                     </div>
                 </div>
             </div>
-            
-            <div>
-                <div class="mb-4">
-                    <label for="class_id" class="block mb-2 text-sm font-medium">Kelas</label>
-                    <select name="class_id" class="input-field" required>
-                        <option value="">-- Pilih Kelas --</option>
+
+            <div class="space-y-6">
+                <div>
+                    <label for="class_id" class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
+                    <select name="class_id"
+                        class="w-full p-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-all"
+                        required>
+                        <option value="">Pilih Kelas</option>
                         <?php $selectedClass = old('class_id', $student['class_id'] ?? ''); ?>
-                        <?php foreach ($classes as $class) : ?>
+                        <?php foreach ($classes as $class): ?>
                             <option value="<?= $class['id'] ?>" <?= $selectedClass == $class['id'] ? 'selected' : '' ?>>
                                 <?= esc($class['name']) ?> (<?= esc($class['academic_year']) ?>)
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="mb-4">
-                    <label for="user_id" class="block mb-2 text-sm font-medium">Tautkan Akun Wali Murid (Opsional)</label>
-                    <select name="user_id" class="input-field">
-                        <option value="">-- Tidak Ditautkan --</option>
+                <div>
+                    <label for="user_id" class="block text-sm font-medium text-gray-700 mb-1">Tautkan Akun Wali Murid
+                        (Opsional)</label>
+                    <select name="user_id"
+                        class="w-full p-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-all">
+                        <option value="">Tidak Ditautkan</option>
                         <?php $selectedParent = old('user_id', $student['user_id'] ?? ''); ?>
-                        <?php foreach ($parents as $parent) : ?>
+                        <?php foreach ($parents as $parent): ?>
                             <option value="<?= $parent['id'] ?>" <?= $selectedParent == $parent['id'] ? 'selected' : '' ?>>
                                 <?= esc($parent['name']) ?> (<?= esc($parent['username']) ?>)
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="mb-4">
-                    <label class="block mb-2 text-sm font-medium" for="photo">Ganti Foto (Opsional)</label>
-                    <div class="flex items-center space-x-4 mb-2">
-                        <img class="h-16 w-16 object-cover rounded-full" src="<?= base_url('uploads/photos/' . ($student['photo'] ?? 'default.png')) ?>" alt="Current Photo">
-                        <input class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" name="photo" type="file" accept="image/png, image/jpeg, image/jpg">
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <label for="card_uid" class="block text-sm font-medium text-gray-700 mb-1">UID Kartu RFID</label>
+                    <div class="flex items-center space-x-3">
+                        <input type="text" id="card_uid" name="card_uid"
+                            value="<?= old('card_uid', $student['card_uid'] ?? '') ?>"
+                            class="w-full p-3 text-sm border border-gray-200 rounded-lg bg-gray-100" readonly
+                            placeholder="Tap kartu untuk scan...">
+                        <button type="button" id="scan-rfid-btn"
+                            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-all">
+                            Scan
+                        </button>
                     </div>
-                    <p class="mt-1 text-xs text-gray-500">Kosongkan jika tidak ingin mengganti foto. MAX 1MB.</p>
+                    <p id="scan-status" class="mt-2 text-xs text-gray-500">Klik "Scan" lalu tap kartu.</p>
+                </div>
+                <div>
+                    <label for="photo" class="block text-sm font-medium text-gray-700 mb-1">Foto</label>
+                    <input type="file" name="photo" accept="image/*"
+                        class="w-full p-3 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                 </div>
             </div>
         </div>
 
-        <div class="flex justify-end space-x-2 mt-6 border-t pt-4">
-            <a href="<?= site_url('admin/siswa') ?>" class="btn-secondary">Batal</a>
-            <button type="submit" class="btn-primary"><?= isset($student) ? 'Simpan Perubahan' : 'Simpan' ?></button>
+        <div class="flex justify-end space-x-3 mt-8">
+            <a href="<?= site_url('admin/siswa') ?>"
+                class="px-5 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all">Batal</a>
+            <button type="submit"
+                class="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-all">
+                <?= isset($student) ? 'Simpan Perubahan' : 'Simpan' ?>
+            </button>
         </div>
     </form>
 </div>
+<?= $this->endSection() ?>
 
-<style> .input-field{display:block;width:100%;padding:0.625rem;font-size:0.875rem;color:#111827;background-color:#F9FAFB;border:1px solid #D1D5DB;border-radius:0.5rem}.input-field:focus{--tw-ring-color:#9333ea;border-color:#9333ea;box-shadow:var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color)}.radio-field{width:1rem;height:1rem;color:#9333ea;background-color:#F3F4F6;border-color:#D1D5DB}.btn-primary{padding-left:1rem;padding-right:1rem;padding-top:0.5rem;padding-bottom:0.5rem;font-size:0.875rem;font-weight:500;color:white;background-color:#9333ea;border-radius:0.5rem}.btn-primary:hover{background-color:#7e22ce}.btn-secondary{padding-left:1rem;padding-right:1rem;padding-top:0.5rem;padding-bottom:0.5rem;font-size:0.875rem;font-weight:500;color:#1f2937;background-color:#E5E7EB;border-radius:0.5rem}.btn-secondary:hover{background-color:#D1D5DB} </style>
+<?= $this->section('scripts') ?>
+<script>
+    $(document).ready(function () {
+        const scanStatus = $('#scan-status');
+        const uidInput = $('#card_uid');
+        const scanButton = $('#scan-rfid-btn');
+
+        scanButton.on('click', function () {
+            scanStatus.text('Menunggu kartu...').removeClass('text-green-600 text-red-600');
+            scanButton.prop('disabled', true).addClass('opacity-50 cursor-not-allowed');
+
+            let attempts = 0;
+            const maxAttempts = 20;
+            const scanStartTime = Math.floor(Date.now() / 1000);
+
+            const pollingInterval = setInterval(function () {
+                attempts++;
+                $.ajax({
+                    url: "<?= site_url('api/getUid') ?>",
+                    method: "GET",
+                    dataType: "json",
+                    success: function (response) {
+                        // Cek jika UID baru dan timestampnya lebih baru dari waktu scan dimulai
+                        if (response.status === 'success' && response.uid && response.timestamp > scanStartTime) {
+                            clearInterval(pollingInterval);
+                            uidInput.val(response.uid);
+                            scanStatus.text('Sukses! UID ' + response.uid + ' ditemukan.').addClass('text-green-600');
+                            scanButton.prop('disabled', false).removeClass('bg-gray-400');
+                        } else if (response.status === 'error' && response.message === 'UID sudah terdaftar' && response.timestamp > scanStartTime) {
+                            clearInterval(pollingInterval);
+                            uidInput.val(''); // !! PERUBAHAN: Kosongkan input jika UID sudah terdaftar
+                            scanStatus.text('Error: UID ini sudah terdaftar!').addClass('text-red-600');
+                            scanButton.prop('disabled', false).removeClass('bg-gray-400');
+                        }
+                    },
+                    error: function () {
+                        console.error("Gagal menghubungi API.");
+                    }
+                });
+
+                if (attempts >= maxAttempts) {
+                    clearInterval(pollingInterval);
+                    scanStatus.text('Waktu habis, coba lagi.').addClass('text-red-600');
+                    scanButton.prop('disabled', false).removeClass('opacity-50 cursor-not-allowed');
+                }
+            }, 1000);
+        });
+    });
+</script>
 <?= $this->endSection() ?>

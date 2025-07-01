@@ -12,6 +12,7 @@ class KegiatanController extends BaseController
     public function index()
     {
         $model = new KegiatanModel();
+        // Ambil data kegiatan dan gabungkan dengan nama siswa serta nama kegiatan
         $data['activities'] = $model
             ->select('activities.*, students.full_name, activity_names.name as activity_name')
             ->join('students', 'students.id = activities.student_id')
@@ -27,8 +28,9 @@ class KegiatanController extends BaseController
         $siswaModel = new SiswaModel();
         $activityNameModel = new ActivityNameModel();
         $data = [
-            'students' => $siswaModel->orderBy('full_name', 'ASC')->findAll(),
-            'activity_names' => $activityNameModel->orderBy('name', 'ASC')->findAll(),
+            'students' => $siswaModel->where('status', 'Aktif')->orderBy('full_name', 'ASC')->findAll(),
+            // Ambil nama kegiatan yang BUKAN untuk presensi tap
+            'activity_names' => $activityNameModel->whereNotIn('type', ['Masuk', 'Pulang'])->orderBy('name', 'ASC')->findAll(),
         ];
         return view('pages/kegiatan/form', $data);
     }
@@ -36,10 +38,10 @@ class KegiatanController extends BaseController
     public function create()
     {
         $rules = [
-            'student_id' => 'required|is_not_unique[students.id]',
-            'activity_name_id' => 'required|is_not_unique[activity_names.id]',
-            'activity_date' => 'required|valid_date',
-            'description' => 'required',
+            'student_id'        => 'required|is_not_unique[students.id]',
+            'activity_name_id'  => 'required|is_not_unique[activity_names.id]',
+            'activity_date'     => 'required|valid_date',
+            'description'       => 'permit_empty|max_length[500]',
         ];
 
         if (!$this->validate($rules)) {
@@ -59,9 +61,9 @@ class KegiatanController extends BaseController
         $activityNameModel = new ActivityNameModel();
 
         $data = [
-            'activity' => $model->find($id),
-            'students' => $siswaModel->orderBy('full_name', 'ASC')->findAll(),
-            'activity_names' => $activityNameModel->orderBy('name', 'ASC')->findAll(),
+            'activity'       => $model->find($id),
+            'students'       => $siswaModel->orderBy('full_name', 'ASC')->findAll(),
+            'activity_names' => $activityNameModel->whereNotIn('type', ['Masuk', 'Pulang'])->orderBy('name', 'ASC')->findAll(),
         ];
         
         if (empty($data['activity'])) {
@@ -74,10 +76,10 @@ class KegiatanController extends BaseController
     public function update($id = null)
     {
         $rules = [
-            'student_id' => 'required|is_not_unique[students.id]',
-            'activity_name_id' => 'required|is_not_unique[activity_names.id]',
-            'activity_date' => 'required|valid_date',
-            'description' => 'required',
+            'student_id'        => 'required|is_not_unique[students.id]',
+            'activity_name_id'  => 'required|is_not_unique[activity_names.id]',
+            'activity_date'     => 'required|valid_date',
+            'description'       => 'permit_empty|max_length[500]',
         ];
 
         if (!$this->validate($rules)) {
