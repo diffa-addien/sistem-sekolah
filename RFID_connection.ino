@@ -6,7 +6,7 @@
 #include <LiquidCrystal_I2C.h>
 
 /**
- * JANGAN GANTI DISINI, GANTI DI ARDUINO EDITOR
+ * JANGAN GANTI DISINI, GANTI DI ARDUINO EDITOR   
  */
 
 #define SS_PIN D4
@@ -80,7 +80,7 @@ void loop() {
         int msgStart = response.indexOf("\"message\":\"") + 11;
         int msgEnd = response.indexOf("\"", msgStart);
         String message = response.substring(msgStart, msgEnd);
-        lcd.print(message);
+        lcd.print("Succes: ".response.indexOf("success"));
     } else {
       lcd.print("Error Koneksi");
     }
