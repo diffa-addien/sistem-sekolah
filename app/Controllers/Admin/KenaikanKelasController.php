@@ -57,15 +57,13 @@ class KenaikanKelasController extends BaseController
 
         foreach ($actions as $student_id => $action) {
             if ($action === 'lulus') {
-                var_dump($siswaModel->update($student_id, ['status' => 'Lulus', 'class_id' => null])); die;
+                $siswaModel->update($student_id, ['status' => 'Lulus', 'class_id' => null]);
             } elseif (is_numeric($action)) {
                 $siswaModel->update($student_id, ['class_id' => $action]);
             }
         }
 
         $db->transComplete();
-
-        var_dump($db->transStatus());die;
 
         if ($db->transStatus() === false) {
             return redirect()->back()->with('error', 'Terjadi kesalahan saat memproses data.');
