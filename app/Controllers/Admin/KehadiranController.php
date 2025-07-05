@@ -19,7 +19,10 @@ class KehadiranController extends BaseController
         $date = $this->request->getGet('date') ?? date('Y-m-d');
 
         $data = [
-            'classes' => $kelasModel->findAll(),
+            'classes' => $kelasModel->select('classes.*, academic_years.status as academic_status')
+                ->join('academic_years', 'academic_years.id = classes.academic_year_id')
+                ->where("academic_years.status","Aktif")
+                ->findAll(),
             'students' => [],
             'selected_class_id' => $class_id,
             'selected_date' => $date,

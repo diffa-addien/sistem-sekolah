@@ -1,16 +1,18 @@
 <style>
-.active{
-    background-color: #00598a;
-    color: #f0f9ff;
-}
+    .active {
+        /* tailwind color: sky */
+        background-color: #00598a; 
+        color: #f0f9ff;
+    }
 </style>
 
 <?php
-  $uri = \Config\Services::uri();
-  $segment2 = $uri->getSegment(2);
-//   var_dump($segment2); die;
+$uri = \Config\Services::uri();
+$segment2 = "";
+if (count($uri->getSegments()) >= 2) {
+    $segment2 = $uri->getSegment(2);
+}
 ?>
-
 
 <aside class="z-20 hidden w-64 overflow-y-auto bg-white md:block flex-shrink-0">
     <div class="py-4 text-gray-500">
@@ -18,9 +20,9 @@
             Baitul Jannah
         </a>
         <ul class="mt-5 ">
-            <li class="relative px-6 pt-4 pb-3 <?=$segment2 == 'dashboard' ? 'active' : '' ?>">
+            <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'dashboard' ? 'active' : '' ?>">
                 <!-- <span class="absolute inset-y-0 left-0 w-1 bg-blue-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span> -->
-                <a href="<?=base_url('admin/dashboard')?>" class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150" href="#">
+                <a href="<?= base_url('admin/dashboard') ?>" class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150" href="#">
                     <svg class="w-5 h-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M13 12c0-.55.45-1 1-1h5c.55 0 1 .45 1 1v7c0 .55-.45 1-1 1h-5c-.55 0-1-.45-1-1v-7zm-9-7c0-.55.45-1 1-1h4c.55 0 1 .45 1 1v7c0 .55-.45 1-1 1H5c-.55 0-1-.45-1-1V5zm0 12c0-.55.45-1 1-1h4c.55 0 1 .45 1 1v2c0 .55-.45 1-1 1H5c-.55 0-1-.45-1-1v-2zm9-12c0-.55.45-1 1-1h5c.55 0 1 .45 1 1v2c0 .55-.45 1-1 1h-5c-.55 0-1-.45-1-1V5z" />
                     </svg>
@@ -29,7 +31,7 @@
             </li>
         </ul>
         <ul>
-            <li class="relative px-6 pt-4 pb-3 <?=$segment2 == 'tahun-ajaran' ? 'active' : '' ?>" x-data="{ isOpen: <?=$segment2 == 'tahun-ajaran' ? 'true' : 'false' ?> }">
+            <li class="relative px-6 pt-4 pb-3" x-data="{ isOpen: <?= $segment2 == 'tahun-ajaran' || $segment2 == 'kelas' || $segment2 == 'siswa' || $segment2 == 'nama-kegiatan' ? 'true' : 'false' ?> }">
                 <button class="inline-flex items-center justify-between w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800" @click="isOpen = !isOpen" aria-haspopup="true">
                     <span class="inline-flex items-center">
                         <svg class="w-5 h-5" aria-hidden="true" viewBox="0 0 32 32" fill="currentColor">
@@ -41,24 +43,24 @@
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                     </svg>
                 </button>
-                <ul x-show="isOpen" x-transition:enter="transition-all ease-in-out duration-300" x-transition:enter-start="opacity-0 max-h-0" x-transition:enter-end="opacity-100 max-h-40" x-transition:leave="transition-all ease-in-out duration-300" x-transition:leave-start="opacity-100 max-h-40" x-transition:leave-end="opacity-0 max-h-0" class="p-2 my-2 space-y-2 overflow-hidden text-sm font-medium text-sky-950 rounded-md shadow-inner bg-sky-50" aria-label="submenu">
-                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800">
+                <ul x-show="isOpen" x-transition:enter="transition-all ease-in-out duration-300" x-transition:enter-start="opacity-0 max-h-0" x-transition:enter-end="opacity-100 max-h-40" x-transition:leave="transition-all ease-in-out duration-300" x-transition:leave-start="opacity-100 max-h-40" x-transition:leave-end="opacity-0 max-h-0" class="py-2 my-2 space-y-2 overflow-hidden text-sm font-medium text-sky-950 rounded-md shadow-inner bg-sky-50" aria-label="submenu">
+                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment2 == 'tahun-ajaran' ? 'active' : '' ?>">
                         <a href="<?= base_url('admin/tahun-ajaran') ?>" class="w-full" href="#">Tahun Ajaran</a>
                     </li>
-                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800">
+                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment2 == 'kelas' ? 'active' : '' ?>">
                         <a href="<?= base_url('admin/kelas') ?>" class="w-full" href="#">Data Kelas</a>
                     </li>
-                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800">
+                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment2 == 'siswa' ? 'active' : '' ?>">
                         <a href="<?= base_url('admin/siswa') ?>" class="w-full" href="#">Data Siswa</a>
                     </li>
-                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800">
+                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment2 == 'nama-kegiatan' ? 'active' : '' ?>">
                         <a href="<?= base_url('admin/nama-kegiatan') ?>" class="w-full" href="#">Daftar Kegiatan</a>
                     </li>
                 </ul>
             </li>
 
 
-            <li class="relative px-6 pt-4 pb-3 <?=$segment2 == 'kehadiran' ? 'active' : '' ?>">
+            <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'kehadiran' ? 'active' : '' ?>">
                 <a href="<?= base_url('admin/kehadiran') ?>" class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800" href="#">
                     <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
                         <path d="M10 21H6.2C5.0799 21 4.51984 21 4.09202 20.782C3.71569 20.5903 3.40973 20.2843 3.21799 19.908C3 19.4802 3 18.9201 3 17.8V8.2C3 7.0799 3 6.51984 3.21799 6.09202C3.40973 5.71569 3.71569 5.40973 4.09202 5.21799C4.51984 5 5.0799 5 6.2 5H17.8C18.9201 5 19.4802 5 19.908 5.21799C20.2843 5.40973 20.5903 5.71569 20.782 6.09202C21 6.51984 21 7.0799 21 8.2V10M7 3V5M17 3V5M3 9H21M13.5 13.0001L7 13M10 17.0001L7 17M14 21L16.025 20.595C16.2015 20.5597 16.2898 20.542 16.3721 20.5097C16.4452 20.4811 16.5147 20.4439 16.579 20.399C16.6516 20.3484 16.7152 20.2848 16.8426 20.1574L21 16C21.5523 15.4477 21.5523 14.5523 21 14C20.4477 13.4477 19.5523 13.4477 19 14L14.8426 18.1574C14.7152 18.2848 14.6516 18.3484 14.601 18.421C14.5561 18.4853 14.5189 18.5548 14.4903 18.6279C14.458 18.7102 14.4403 18.7985 14.405 18.975L14 21Z" />
@@ -67,7 +69,7 @@
                 </a>
             </li>
 
-            <li class="relative px-6 pt-4 pb-3 <?=$segment2 == 'kegiatan' ? 'active' : '' ?>">
+            <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'kegiatan' ? 'active' : '' ?>">
                 <a href="<?= base_url('admin/kegiatan') ?>" class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800" href="#">
                     <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" stroke="currentColor">
                         <path d="M2 5.5L3.21429 7L7.5 3 M2 12.5L3.21429 14L7.5 10 M2 19.5L3.21429 21L7.5 17 M22 19L12 19 M22 12L12 12 M22 5L12 5" />
@@ -76,7 +78,7 @@
                 </a>
             </li>
 
-            <li class="relative px-6 pt-4 pb-3 <?=$segment2 == 'kenaikan-kelas' ? 'active' : '' ?>">
+            <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'kenaikan-kelas' ? 'active' : '' ?>">
                 <a href="<?= base_url('admin/kenaikan-kelas') ?>" class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800" href="#">
                     <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
                         <path d="M21 21H6.2C5.07989 21 4.51984 21 4.09202 20.782C3.71569 20.5903 3.40973 20.2843 3.21799 19.908C3 19.4802 3 18.9201 3 17.8V3M7 15L12 9L16 13L21 7" />
@@ -85,7 +87,7 @@
                 </a>
             </li>
 
-            <li class="relative px-6 pt-4 pb-3 <?=$segment2 == 'laporan' ? 'active' : '' ?>" x-data="{ isOpen: <?=$segment2 == 'laporan' ? 'true' : 'false' ?> }">
+            <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'laporan' ? 'active' : '' ?>" x-data="{ isOpen: <?= $segment2 == 'laporan' ? 'true' : 'false' ?> }">
                 <button class="inline-flex items-center justify-between w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800" @click="isOpen = !isOpen" aria-haspopup="true">
                     <span class="inline-flex items-center">
                         <svg class="w-5 h-5" aria-hidden="true" viewBox="0 0 297.001 297.001" fill="currentColor">
@@ -109,7 +111,6 @@
         </ul>
     </div>
 </aside>
-
 <div x-show="isSideMenuOpen"
     x-transition:enter="transition ease-in-out duration-150"
     x-transition:enter-start="opacity-0"
@@ -120,6 +121,7 @@
     @click="isSideMenuOpen = false"
     class="fixed inset-y-0 left-0 right-0 z-20 mt-16 bg-black bg-opacity-50">
 </div>
+
 <aside class="fixed inset-y-0 z-30 flex-shrink-0 w-64 mt-16 overflow-y-auto bg-white md:hidden"
     x-show="isSideMenuOpen"
     x-transition:enter="transition ease-in-out duration-150"
@@ -133,8 +135,8 @@
             Baitul Jannah
         </a>
         <ul class="mt-5 ">
-            <li class="relative px-6 pt-4 pb-3 <?=$segment2 == 'dashboard' ? 'active' : '' ?>">
-                <a href="<?=base_url('admin/dashboard')?>" class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150" href="#">
+            <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'dashboard' ? 'active' : '' ?>">
+                <a href="<?= base_url('admin/dashboard') ?>" class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150" href="#">
                     <svg class="w-5 h-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M13 12c0-.55.45-1 1-1h5c.55 0 1 .45 1 1v7c0 .55-.45 1-1 1h-5c-.55 0-1-.45-1-1v-7zm-9-7c0-.55.45-1 1-1h4c.55 0 1 .45 1 1v7c0 .55-.45 1-1 1H5c-.55 0-1-.45-1-1V5zm0 12c0-.55.45-1 1-1h4c.55 0 1 .45 1 1v2c0 .55-.45 1-1 1H5c-.55 0-1-.45-1-1v-2zm9-12c0-.55.45-1 1-1h5c.55 0 1 .45 1 1v2c0 .55-.45 1-1 1h-5c-.55 0-1-.45-1-1V5z" />
                     </svg>
@@ -143,7 +145,7 @@
             </li>
         </ul>
         <ul>
-            <li class="relative px-6 pt-4 pb-3 <?=$segment2 == 'tahun-ajaran' || $segment2 == 'kelas' || $segment2 == 'siswa' || $segment2 == 'nama-kegiatan' ? 'active' : '' ?>" x-data="{ isOpen: <?=$segment2 == 'tahun-ajaran' || $segment2 == 'kelas' || $segment2 == 'siswa' || $segment2 == 'nama-kegiatan' ? 'true' : 'false' ?> }">
+            <li class="relative px-6 pt-4 pb-3" x-data="{ isOpen: <?= $segment2 == 'tahun-ajaran' || $segment2 == 'kelas' || $segment2 == 'siswa' || $segment2 == 'nama-kegiatan' ? 'true' : 'false' ?> }">
                 <button class="inline-flex items-center justify-between w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800" @click="isOpen = !isOpen" aria-haspopup="true">
                     <span class="inline-flex items-center">
                         <svg class="w-5 h-5" aria-hidden="true" viewBox="0 0 32 32" fill="currentColor">
@@ -155,23 +157,23 @@
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                     </svg>
                 </button>
-                <ul x-show="isOpen" x-transition:enter="transition-all ease-in-out duration-300" x-transition:enter-start="opacity-0 max-h-0" x-transition:enter-end="opacity-100 max-h-40" x-transition:leave="transition-all ease-in-out duration-300" x-transition:leave-start="opacity-100 max-h-40" x-transition:leave-end="opacity-0 max-h-0" class="p-2 my-2 space-y-2 overflow-hidden text-sm font-medium text-sky-950 rounded-md shadow-inner bg-sky-50" aria-label="submenu">
-                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800">
+                <ul x-show="isOpen" x-transition:enter="transition-all ease-in-out duration-300" x-transition:enter-start="opacity-0 max-h-0" x-transition:enter-end="opacity-100 max-h-40" x-transition:leave="transition-all ease-in-out duration-300" x-transition:leave-start="opacity-100 max-h-40" x-transition:leave-end="opacity-0 max-h-0" class="py-2 my-2 space-y-2 overflow-hidden text-sm font-medium text-sky-950 rounded-md shadow-inner bg-sky-50" aria-label="submenu">
+                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment2 == 'tahun-ajaran' ? 'active' : '' ?>">
                         <a href="<?= base_url('admin/tahun-ajaran') ?>" class="w-full" href="#">Tahun Ajaran</a>
                     </li>
-                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800">
+                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment2 == 'kelas' ? 'active' : '' ?>">
                         <a href="<?= base_url('admin/kelas') ?>" class="w-full" href="#">Data Kelas</a>
                     </li>
-                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800">
+                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment2 == 'siswa' ? 'active' : '' ?>">
                         <a href="<?= base_url('admin/siswa') ?>" class="w-full" href="#">Data Siswa</a>
                     </li>
-                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800">
+                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment2 == 'nama-kegiatan' ? 'active' : '' ?>">
                         <a href="<?= base_url('admin/nama-kegiatan') ?>" class="w-full" href="#">Daftar Kegiatan</a>
                     </li>
                 </ul>
             </li>
 
-            <li class="relative px-6 pt-4 pb-3 <?=$segment2 == 'kehadiran' ? 'active' : '' ?>">
+            <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'kehadiran' ? 'active' : '' ?>">
                 <a href="<?= base_url('admin/kehadiran') ?>" class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800" href="#">
                     <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
                         <path d="M10 21H6.2C5.0799 21 4.51984 21 4.09202 20.782C3.71569 20.5903 3.40973 20.2843 3.21799 19.908C3 19.4802 3 18.9201 3 17.8V8.2C3 7.0799 3 6.51984 3.21799 6.09202C3.40973 5.71569 3.71569 5.40973 4.09202 5.21799C4.51984 5 5.0799 5 6.2 5H17.8C18.9201 5 19.4802 5 19.908 5.21799C20.2843 5.40973 20.5903 5.71569 20.782 6.09202C21 6.51984 21 7.0799 21 8.2V10M7 3V5M17 3V5M3 9H21M13.5 13.0001L7 13M10 17.0001L7 17M14 21L16.025 20.595C16.2015 20.5597 16.2898 20.542 16.3721 20.5097C16.4452 20.4811 16.5147 20.4439 16.579 20.399C16.6516 20.3484 16.7152 20.2848 16.8426 20.1574L21 16C21.5523 15.4477 21.5523 14.5523 21 14C20.4477 13.4477 19.5523 13.4477 19 14L14.8426 18.1574C14.7152 18.2848 14.6516 18.3484 14.601 18.421C14.5561 18.4853 14.5189 18.5548 14.4903 18.6279C14.458 18.7102 14.4403 18.7985 14.405 18.975L14 21Z" />
@@ -180,7 +182,7 @@
                 </a>
             </li>
 
-            <li class="relative px-6 pt-4 pb-3 <?=$segment2 == 'kegiatan' ? 'active' : '' ?>">
+            <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'kegiatan' ? 'active' : '' ?>">
                 <a href="<?= base_url('admin/kegiatan') ?>" class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800" href="#">
                     <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" stroke="currentColor">
                         <path d="M2 5.5L3.21429 7L7.5 3 M2 12.5L3.21429 14L7.5 10 M2 19.5L3.21429 21L7.5 17 M22 19L12 19 M22 12L12 12 M22 5L12 5" />
@@ -189,7 +191,7 @@
                 </a>
             </li>
 
-            <li class="relative px-6 pt-4 pb-3 <?=$segment2 == 'kenaikan-kelas' ? 'active' : '' ?>">
+            <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'kenaikan-kelas' ? 'active' : '' ?>">
                 <a href="<?= base_url('admin/kenaikan-kelas') ?>" class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800" href="#">
                     <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
                         <path d="M21 21H6.2C5.07989 21 4.51984 21 4.09202 20.782C3.71569 20.5903 3.40973 20.2843 3.21799 19.908C3 19.4802 3 18.9201 3 17.8V3M7 15L12 9L16 13L21 7" />
@@ -198,7 +200,7 @@
                 </a>
             </li>
 
-            <li class="relative px-6 pt-4 pb-3 <?=$segment2 == 'laporan' ? 'active' : '' ?>" x-data="{ isOpen: <?=$segment2 == 'laporan' ? 'true' : 'false' ?> }">
+            <li class="relative px-6 pt-4 pb-3" x-data="{ isOpen: <?= $segment2 == 'laporan' ? 'true' : 'false' ?> }">
                 <button class="inline-flex items-center justify-between w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800" @click="isOpen = !isOpen" aria-haspopup="true">
                     <span class="inline-flex items-center">
                         <svg class="w-5 h-5" aria-hidden="true" viewBox="0 0 297.001 297.001" fill="currentColor">

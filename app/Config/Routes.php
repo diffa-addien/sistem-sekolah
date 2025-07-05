@@ -5,7 +5,9 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/', 'Admin\Dashboard::index');
+$routes->get('/', function () {
+    return redirect()->to('/admin/dashboard');
+});
 
 /*
  * --------------------------------------------------------------------

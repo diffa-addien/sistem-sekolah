@@ -10,7 +10,7 @@ Manajemen Kenaikan Kelas & Kelulusan
 
     <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
         <form action="<?= site_url('admin/kenaikan-kelas') ?>" method="get">
-            <p class="text-sm text-gray-600 mb-4">Pilih tahun ajaran untuk memindahkan siswa ke tahun ajaran aktif.</p>
+            <p class="text-md text-gray-600 mb-4">Pilih tahun ajaran (lama) untuk memindahkan siswa ke tahun ajaran aktif.</p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div>
                     <label for="from_year_id" class="block text-sm font-medium text-gray-700 mb-1">Dari Tahun Ajaran (Tidak Aktif)</label>
@@ -23,8 +23,8 @@ Manajemen Kenaikan Kelas & Kelulusan
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Ke Tahun Ajaran (Aktif)</label>
-                    <input type="text" value="<?= esc($active_year['year'] ?? 'Tidak ada tahun ajaran aktif') ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100" readonly>
+                    <label class="block text-sm font-medium text-gree-700 mb-1">Ke Tahun Ajaran (Aktif)</label>
+                    <input type="text" value="<?= esc($active_year['year'] ?? 'Tidak ada tahun ajaran aktif') ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-green-100" readonly>
                 </div>
                 <div>
                     <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200">Tampilkan Data</button>

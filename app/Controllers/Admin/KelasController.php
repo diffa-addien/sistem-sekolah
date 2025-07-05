@@ -16,23 +16,28 @@ class KelasController extends BaseController
         $model = new KelasModel();
 
         // Mengambil data dengan JOIN
-        $data['classes'] = $model->select('classes.id, classes.name, academic_years.year as academic_year')
-                                ->join('academic_years', 'academic_years.id = classes.academic_year_id')
-                                ->orderBy('classes.id', 'DESC')
-                                ->findAll();
+        $data['classes'] = $model->select('classes.id, classes.name, academic_years.year as academic_year, academic_years.status as status')
+            ->join('academic_years', 'academic_years.id = classes.academic_year_id')
+            ->orderBy('classes.id', 'DESC')
+            ->findAll();
+
+            // var_dump($data['classes']); die;
 
         return view('pages/kelas/index', $data);
     }
 
     // Method lainnya kita biarkan dulu
-    public function new() {
+    public function new()
+    {
         $tahunAjaranModel = new TahunAjaranModel();
         // 2. Ambil semua tahun ajaran untuk dropdown
         $data['academicYears'] = $tahunAjaranModel->orderBy('year', 'DESC')->findAll();
-        
+
         return view('pages/kelas/form', $data);
     }
-    public function create() {  $rules = [
+    public function create()
+    {
+        $rules = [
             'name' => 'required',
             'academic_year_id' => 'required|is_not_unique[academic_years.id]'
         ];
@@ -40,7 +45,7 @@ class KelasController extends BaseController
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
-        
+
         // Simpan data
         $model = new KelasModel();
         $model->save([
@@ -48,8 +53,10 @@ class KelasController extends BaseController
             'academic_year_id'  => $this->request->getPost('academic_year_id'),
         ]);
 
-        return redirect()->to('admin/kelas')->with('success', 'Data Kelas berhasil ditambahkan!'); }
-    public function edit($id = null) { 
+        return redirect()->to('admin/kelas')->with('success', 'Data Kelas berhasil ditambahkan!');
+    }
+    public function edit($id = null)
+    {
         $kelasModel = new KelasModel();
         $tahunAjaranModel = new TahunAjaranModel();
 
@@ -63,8 +70,9 @@ class KelasController extends BaseController
         }
 
         return view('pages/kelas/form', $data);
-     }
-    public function update($id = null) { 
+    }
+    public function update($id = null)
+    {
         $rules = [
             'name' => 'required',
             'academic_year_id' => 'required|is_not_unique[academic_years.id]'
@@ -81,17 +89,21 @@ class KelasController extends BaseController
         ]);
 
         return redirect()->to('admin/kelas')->with('success', 'Data Kelas berhasil diperbarui!');
-     }
-    public function delete($id = null) { 
+    }
+    public function delete($id = null)
+    {
         $model = new KelasModel();
-        
+
         $data = $model->find($id);
         if ($data) {
             $model->delete($id);
             return redirect()->to('admin/kelas')->with('success', 'Data Kelas berhasil dihapus!');
         }
-        
+
         return redirect()->to('admin/kelas')->with('error', 'Data Kelas tidak ditemukan.');
-     }
-    public function show($id = null) { /* ... */ }
+    }
+    public function show($id = null)
+    { 
+        /* ... */
+    }
 }

@@ -42,8 +42,8 @@ Manajemen Siswa
                             </div>
                         </td>
                         <td class="px-4 py-3 text-sm"><?= esc($student['nis']) ?></td>
-                        <td class="px-4 py-3 text-sm font-semibold"><?= esc($student['full_name']) ?></td>
-                        <td class="px-4 py-3 text-sm"><?= esc($student['class_name']) ?></td>
+                        <td class="px-4 py-3 text-sm font-bold"><?= esc($student['full_name']) ?></td>
+                        <td class="px-4 py-3 text-sm"><?= "<b>".esc($student['class_name'])."</b> (".esc($student['tahun_kelas']).")" ?></td>
                         <td class="px-4 py-3 text-sm"><?= esc($student['parent_name'] ?? 'Belum Ditautkan') ?></td>
                         <td class="px-4 py-3 text-sm sticky right-0 bg-white z-10">
                             <div class="flex items-center space-x-4">

@@ -14,8 +14,9 @@ class SiswaController extends BaseController
         $model = new SiswaModel();
 
         // Query untuk mengambil data siswa dengan nama kelas dan nama wali murid
-        $data['students'] = $model->select('students.id, students.nis, students.full_name, students.photo, classes.name as class_name, users.name as parent_name')
+        $data['students'] = $model->select('students.id, students.nis, students.full_name, students.photo, classes.name as class_name, users.name as parent_name, academic_years.year as tahun_kelas')
             ->join('classes', 'classes.id = students.class_id')
+            ->join('academic_years', 'academic_years.id = classes.academic_year_id')
             ->join('users', 'users.id = students.user_id', 'left') // LEFT JOIN
             ->orderBy('students.id', 'DESC')
             ->findAll();
