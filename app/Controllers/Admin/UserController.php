@@ -71,7 +71,7 @@ class UserController extends BaseController
         $oldData = $model->find($id);
 
         $usernameRule = ($this->request->getPost('username') == $oldData['username']) ? 'required' : 'required|is_unique[users.username]';
-        
+
         $rules = [
             'name'      => 'required',
             'username'  => $usernameRule,
@@ -90,12 +90,12 @@ class UserController extends BaseController
             'username' => $this->request->getPost('username'),
             'role'     => $this->request->getPost('role'),
         ];
-        
+
         // Update password jika diisi
         if ($this->request->getPost('password')) {
             $dataToUpdate['password'] = password_hash($this->request->getPost('password'), PASSWORD_BCRYPT);
         }
-        
+
         // Proses upload foto baru jika ada
         $photoFile = $this->request->getFile('photo');
         if ($photoFile->isValid() && !$photoFile->hasMoved()) {
@@ -114,10 +114,20 @@ class UserController extends BaseController
 
     public function delete($id = null)
     {
+        // Larangan menghapus diri sendiri
+        if ($id == session()->get('user_id')) {
+            return redirect()->to('admin/user')->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
+        }
+
         $model = new UserModel();
         $user = $model->find($id);
 
         if ($user) {
+            // Larangan menghapus user dengan role 'Admin'
+            if ($user['role'] === 'Admin') {
+                return redirect()->to('admin/user')->with('error', 'Akun dengan role Admin tidak dapat dihapus.');
+            }
+
             // Hapus foto jika bukan default
             if ($user['photo'] && $user['photo'] !== 'default.png') {
                 unlink(FCPATH . 'uploads/photos/' . $user['photo']);

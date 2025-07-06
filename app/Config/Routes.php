@@ -14,11 +14,11 @@ $routes->get('login', 'AuthController::index');
 $routes->post('login', 'AuthController::processLogin');
 $routes->get('logout', 'AuthController::logout');
 
-/*
- * --------------------------------------------------------------------
- * Admin Routes
- * --------------------------------------------------------------------
- */
+// Rute untuk Akun Pengguna
+$routes->get('akun', 'AkunController::index', ['filter' => 'auth']);
+$routes->post('akun/update', 'AkunController::update', ['filter' => 'auth']);
+
+// Admin Routes
 $routes->group('admin', ['filter' => 'auth:Admin,Guru'], static function ($routes) {
     $routes->get('dashboard', 'Admin\DashboardController::index');
 

@@ -14,7 +14,7 @@ if (count($uri->getSegments()) >= 2) {
 }
 ?>
 
-<aside class="z-20 hidden w-64 overflow-y-auto bg-white md:block flex-shrink-0">
+<aside class="z-20 hidden w-64 overflow-y-auto bg-white border-r border-gray-300 md:block flex-shrink-0">
     <div class="py-4 text-gray-500">
         <a class="ml-6 text-lg font-bold text-gray-800" href="#">
             Baitul Jannah
