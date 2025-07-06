@@ -38,14 +38,14 @@
 
 <body class="bg-gray-100" x-data="{ isSideMenuOpen: false }" @keydown.escape="isSideMenuOpen = false">
 
-  <div class="flex h-screen bg-gray-200">
+  <div class="flex h-screen bg-gray-100">
     <?= $this->include('layouts/sidebar') ?>
 
     <div class="flex flex-col flex-1">
       <?= $this->include('layouts/header') ?>
 
       <main class="h-full pb-16 overflow-y-auto">
-        <div class="container p-6 mx-auto grid">
+        <div class="container p-1 md:p-4 mx-auto grid">
           <?= $this->renderSection('content') ?>
         </div>
       </main>

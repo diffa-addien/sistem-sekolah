@@ -9,13 +9,18 @@ $routes->get('/', function () {
     return redirect()->to('/admin/dashboard');
 });
 
+// Rute untuk Autentikasi
+$routes->get('login', 'AuthController::index');
+$routes->post('login', 'AuthController::processLogin');
+$routes->get('logout', 'AuthController::logout');
+
 /*
  * --------------------------------------------------------------------
  * Admin Routes
  * --------------------------------------------------------------------
  */
-$routes->group('admin', static function ($routes) {
-    $routes->get('dashboard', 'Admin\Dashboard::index');
+$routes->group('admin', ['filter' => 'auth:Admin,Guru'], static function ($routes) {
+    $routes->get('dashboard', 'Admin\DashboardController::index');
 
     // Pakai Auto Method
     $routes->resource('tahun-ajaran', [
@@ -45,6 +50,15 @@ $routes->group('admin', static function ($routes) {
 
     $routes->get('kenaikan-kelas', 'Admin\KenaikanKelasController::index');
     $routes->post('kenaikan-kelas/proses', 'Admin\KenaikanKelasController::process');
+});
+
+// Rute untuk Wali Murid
+$routes->group('wali', ['filter' => 'auth:Wali Murid'], static function ($routes) {
+    $routes->get('dashboard', 'WaliMuridController::dashboard');
+    // Halaman utama untuk checklist kegiatan
+    $routes->get('kegiatan-harian', 'WaliMuridController::index');
+    // API untuk menyimpan/menghapus checklist secara otomatis
+    $routes->post('kegiatan-harian/save', 'WaliMuridController::saveActivity');
 });
 
 // Rute untuk API
