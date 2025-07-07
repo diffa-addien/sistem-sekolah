@@ -11,7 +11,21 @@ Dashboard Wali Murid
   </h2>
 
   <div class="mb-6 bg-white p-4 rounded-lg shadow-md flex items-center space-x-4">
-    <img class="h-20 w-20 object-cover rounded-full" src="<?= base_url('uploads/photos/' . ($student['photo'] ?? 'default.png')) ?>" alt="Foto <?= esc($student['full_name']) ?>">
+    <?php if (!empty($student['photo'])): ?>
+      <div class="relative h-20 w-20">
+        <img class="object-cover h-20 w-20 rounded-full shadow-md" src="<?= base_url('uploads/photos/' . $student['photo']) ?>"
+          alt="Foto Profil" loading="lazy"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div
+          class="hidden absolute inset-0 flex items-center justify-center rounded-full bg-sky-900 text-white text-4xl font-semibold">
+          <?= esc(strtoupper(substr($student['full_name'], 0, 1))) ?>
+        </div>
+      </div>
+    <?php else: ?>
+      <div class="flex items-center justify-center h-20 w-20 rounded-full bg-blue-500 text-white text-4xl font-semibold">
+        <?= esc(substr($student['full_name'], 0, 1)) ?>
+      </div>
+    <?php endif; ?>
     <div>
       <p class="text-xl font-bold text-gray-800"><?= esc($student['full_name']) ?></p>
       <p class="text-sm text-gray-600">NIS: <?= esc($student['nis']) ?></p>
@@ -20,11 +34,15 @@ Dashboard Wali Murid
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <a href="<?= site_url('wali/kegiatan-harian') ?>" class="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
+    <a href="<?= site_url('wali/kegiatan-harian') ?>"
+      class="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
       <div class="flex items-center">
         <div class="p-3 bg-purple-100 rounded-full">
-          <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+          <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4">
+            </path>
           </svg>
         </div>
         <div class="ml-4">

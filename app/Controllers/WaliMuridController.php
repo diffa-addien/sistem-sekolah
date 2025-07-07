@@ -12,43 +12,40 @@ class WaliMuridController extends BaseController
      * Menampilkan halaman checklist kegiatan harian.
      */
 
-     // !! TAMBAHKAN METHOD BARU INI !!
+    // !! TAMBAHKAN METHOD BARU INI !!
     public function dashboard()
     {
         $siswaModel = new SiswaModel();
-        
-        // Ambil data siswa berdasarkan user_id wali murid yang login dari session
+
+        // !! PERUBAHAN: Ambil ID dari session, bukan angka statis !!
+        $parent_user_id = session()->get('user_id');
+
         $student = $siswaModel
             ->select('students.*, classes.name as class_name')
             ->join('classes', 'classes.id = students.class_id', 'left')
-            ->where('students.user_id', session()->get('user_id'))
+            ->where('students.user_id', $parent_user_id)
             ->first();
 
         if (!$student) {
-            // Tampilkan pesan jika tidak ada data siswa yang terhubung
-             return view('wali/no_student_linked');
+            return view('wali/no_student_linked');
         }
 
         $data['student'] = $student;
         return view('wali/dashboard', $data);
     }
-    
+
+
     public function index()
     {
-        // === SIMULASI LOGIN WALI MURID ===
-        // Karena belum ada sistem login, kita anggap wali murid yang login
-        // memiliki user_id = 3 (sesuaikan dengan data user wali murid di database Anda).
-        $parent_user_id = 2;
-        // ===================================
+        $parent_user_id = session()->get('user_id');
 
         $siswaModel = new SiswaModel();
         $activityNameModel = new ActivityNameModel();
         $kegiatanModel = new KegiatanModel();
 
-        // Cari data siswa yang terhubung dengan akun wali murid ini
         $student = $siswaModel->where('user_id', $parent_user_id)->first();
         if (!$student) {
-            return "Tidak ada data siswa yang terhubung dengan akun wali murid ini. Silakan tautkan di menu Manajemen Siswa.";
+            return "Tidak ada data siswa yang terhubung dengan akun wali murid ini.";
         }
 
         // Ambil daftar kegiatan yang tipenya 'Rumah'
