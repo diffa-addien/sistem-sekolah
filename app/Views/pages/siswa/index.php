@@ -23,6 +23,7 @@ Manajemen Siswa
                     <th class="px-4 py-3">NIS</th>
                     <th class="px-4 py-3">Nama Siswa</th>
                     <th class="px-4 py-3">Kelas</th>
+                    <th class="px-4 py-3 text-center">RFID</th>
                     <th class="px-4 py-3">Wali Murid</th>
                     <th class="px-4 py-3 sticky right-0 bg-white z-10">Aksi</th>
                 </tr>
@@ -54,6 +55,26 @@ Manajemen Siswa
                         <td class="px-4 py-3 text-sm">
                             <?= "<b>" . esc($student['class_name']) . "</b> (" . esc($student['tahun_kelas']) . ")" ?>
                         </td>
+
+                        <td class="px-4 py-3 text-start">
+                            <?php if (!empty($student['card_uid'])): ?>
+                                <span class="inline-flex items-center gap-1 p-1 text-white bg-green-600 rounded-full">
+                                    <svg class="w-4 h-4 " fill="none" stroke="currentColor" stroke-width="2"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </span>
+                            <?php else: ?>
+                                <span class="inline-flex items-center gap-1 p-1 text-white bg-red-300 rounded-full">
+                                    <svg class="w-4 h-4 " fill="none" stroke="currentColor" stroke-width="2"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </span>
+                            <?php endif; ?>
+                        </td>
+
+
                         <td class="px-4 py-3 text-sm"><?= esc($student['parent_name'] ?? 'Belum Ditautkan') ?></td>
                         <td class="px-4 py-3 text-sm sticky right-0 bg-white z-10">
                             <div class="flex items-center space-x-4">
