@@ -34,16 +34,26 @@ Manajemen Siswa
                         <td class="px-4 py-3">
                             <div class="flex items-center text-sm">
                                 <div class="relative hidden w-12 h-12 mr-3 rounded-full md:block">
-                                    <img class="object-cover w-full h-full rounded-full"
-                                        src="<?= base_url('uploads/photos/' . ($student['photo'] ?? 'default.png')) ?>"
-                                        alt="Foto <?= esc($student['full_name']) ?>" loading="lazy" />
-                                    <div class="absolute inset-0 rounded-full shadow-inner" aria-hidden="true"></div>
+
+                                    <div class="relative w-full h-full">
+                                        <img class="object-cover w-full h-full rounded-full shadow-md"
+                                            src="<?= base_url('uploads/photos/' . $student['photo']) ?>" alt="Foto Profil"
+                                            loading="lazy"
+                                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div
+                                            class="hidden absolute inset-0 flex items-center justify-center rounded-full bg-sky-900 text-white text-sm font-semibold">
+                                            <?= esc(strtoupper(substr($student['full_name'], 0, 1))) ?>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
                         </td>
                         <td class="px-4 py-3 text-sm"><?= esc($student['nis']) ?></td>
                         <td class="px-4 py-3 text-sm font-bold"><?= esc($student['full_name']) ?></td>
-                        <td class="px-4 py-3 text-sm"><?= "<b>".esc($student['class_name'])."</b> (".esc($student['tahun_kelas']).")" ?></td>
+                        <td class="px-4 py-3 text-sm">
+                            <?= "<b>" . esc($student['class_name']) . "</b> (" . esc($student['tahun_kelas']) . ")" ?>
+                        </td>
                         <td class="px-4 py-3 text-sm"><?= esc($student['parent_name'] ?? 'Belum Ditautkan') ?></td>
                         <td class="px-4 py-3 text-sm sticky right-0 bg-white z-10">
                             <div class="flex items-center space-x-4">

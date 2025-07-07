@@ -4,13 +4,31 @@ namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
 use App\Models\UserModel;
+use CodeIgniter\Database\Exceptions\DatabaseException;
 
 class UserController extends BaseController
 {
     public function index()
     {
         $model = new UserModel();
-        $data['users'] = $model->orderBy('id', 'DESC')->findAll();
+
+        // Ambil filter role dari URL
+        $role = $this->request->getGet('role');
+
+        // Siapkan query dasar
+        $query = $model->orderBy('id', 'DESC');
+
+        // Jika ada filter role yang valid, tambahkan kondisi where
+        if ($role && in_array($role, ['Admin', 'Guru', 'Wali Murid'])) {
+            $query->where('role', $role);
+        }
+
+        // Kirim data hasil query dan filter yang dipilih ke view
+        $data = [
+            'users' => $query->findAll(),
+            'selected_role' => $role
+        ];
+
         return view('pages/user/index', $data);
     }
 
@@ -22,12 +40,12 @@ class UserController extends BaseController
     public function create()
     {
         $rules = [
-            'name'      => 'required',
-            'username'  => 'required|is_unique[users.username]',
-            'role'      => 'required|in_list[Admin,Guru,Wali Murid]',
-            'password'  => 'required|min_length[8]',
+            'name' => 'required',
+            'username' => 'required|is_unique[users.username]',
+            'role' => 'required|in_list[Admin,Guru,Wali Murid]',
+            'password' => 'required|min_length[8]',
             'pass_confirm' => 'required|matches[password]',
-            'photo'     => 'max_size[photo,1024]|is_image[photo]|mime_in[photo,image/jpg,image/jpeg,image/png]'
+            'photo' => 'max_size[photo,1024]|is_image[photo]|mime_in[photo,image/jpg,image/jpeg,image/png]'
         ];
 
         if (!$this->validate($rules)) {
@@ -35,7 +53,7 @@ class UserController extends BaseController
         }
 
         $photoFile = $this->request->getFile('photo');
-        $photoName = 'default.png';
+        $photoName = ''; // Kosongkan dulu
         if ($photoFile->isValid() && !$photoFile->hasMoved()) {
             $photoName = $photoFile->getRandomName();
             $photoFile->move(FCPATH . 'uploads/photos', $photoName);
@@ -43,11 +61,11 @@ class UserController extends BaseController
 
         $model = new UserModel();
         $model->save([
-            'name'     => $this->request->getPost('name'),
+            'name' => $this->request->getPost('name'),
             'username' => $this->request->getPost('username'),
-            'role'     => $this->request->getPost('role'),
+            'role' => $this->request->getPost('role'),
             'password' => password_hash($this->request->getPost('password'), PASSWORD_BCRYPT),
-            'photo'    => $photoName,
+            'photo' => $photoName,
         ]);
 
         return redirect()->to('admin/user')->with('success', 'Data User berhasil ditambahkan!');
@@ -68,35 +86,31 @@ class UserController extends BaseController
     public function update($id = null)
     {
         $model = new UserModel();
-        $oldData = $model->find($id);
-
-        $usernameRule = ($this->request->getPost('username') == $oldData['username']) ? 'required' : 'required|is_unique[users.username]';
 
         $rules = [
-            'name'      => 'required',
-            'username'  => $usernameRule,
-            'role'      => 'required|in_list[Admin,Guru,Wali Murid]',
-            'password'  => 'permit_empty|min_length[8]',
+            'name' => 'required',
+            'username' => "required|is_unique[users.username,id,{$id}]",
+            'role' => 'required|in_list[Admin,Guru,Wali Murid]',
+            'password' => 'permit_empty|min_length[8]',
             'pass_confirm' => 'permit_empty|matches[password]',
-            'photo'     => 'max_size[photo,1024]|is_image[photo]|mime_in[photo,image/jpg,image/jpeg,image/png]'
+            'photo' => 'max_size[photo,1024]|is_image[photo]|mime_in[photo,image/jpg,image/jpeg,image/png]'
         ];
 
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        $oldData = $model->find($id);
         $dataToUpdate = [
-            'name'     => $this->request->getPost('name'),
+            'name' => $this->request->getPost('name'),
             'username' => $this->request->getPost('username'),
-            'role'     => $this->request->getPost('role'),
+            'role' => $this->request->getPost('role'),
         ];
 
-        // Update password jika diisi
         if ($this->request->getPost('password')) {
             $dataToUpdate['password'] = password_hash($this->request->getPost('password'), PASSWORD_BCRYPT);
         }
 
-        // Proses upload foto baru jika ada
         $photoFile = $this->request->getFile('photo');
         if ($photoFile->isValid() && !$photoFile->hasMoved()) {
             if ($oldData['photo'] && $oldData['photo'] !== 'default.png') {
@@ -114,7 +128,6 @@ class UserController extends BaseController
 
     public function delete($id = null)
     {
-        // Larangan menghapus diri sendiri
         if ($id == session()->get('user_id')) {
             return redirect()->to('admin/user')->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
         }
@@ -123,17 +136,19 @@ class UserController extends BaseController
         $user = $model->find($id);
 
         if ($user) {
-            // Larangan menghapus user dengan role 'Admin'
             if ($user['role'] === 'Admin') {
                 return redirect()->to('admin/user')->with('error', 'Akun dengan role Admin tidak dapat dihapus.');
             }
 
-            // Hapus foto jika bukan default
-            if ($user['photo'] && $user['photo'] !== 'default.png') {
-                unlink(FCPATH . 'uploads/photos/' . $user['photo']);
+            try {
+                if ($user['photo'] && $user['photo'] !== 'default.png') {
+                    unlink(FCPATH . 'uploads/photos/' . $user['photo']);
+                }
+                $model->delete($id);
+                return redirect()->to('admin/user')->with('success', 'Data User berhasil dihapus!');
+            } catch (DatabaseException $e) {
+                return redirect()->to('admin/user')->with('error', 'User tidak dapat dihapus karena terhubung dengan data siswa.');
             }
-            $model->delete($id);
-            return redirect()->to('admin/user')->with('success', 'Data User berhasil dihapus!');
         }
 
         return redirect()->to('admin/user')->with('error', 'Data User tidak ditemukan.');
