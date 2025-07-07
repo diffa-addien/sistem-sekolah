@@ -82,8 +82,8 @@ Dashboard Admin
     <div class="order-1 md:order-2 md:col-span-2 flex flex-col items-between justify-between bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="font-bold italic text-xl text-gray-800">Dashboard</h1>
-                <p class="text-sm text-gray-400">Sistem v1.00</p>
+                <h1 class="font-bold text-xl text-gray-800">Dashboard</h1>
+                <p class="text-sm italic text-gray-400">Sistem Informasi v1.00</p>
             </div>
             <div class="flex items-center space-x-4 text-sm text-gray-500">
                 <a href="#" class="inline-flex items-center hover:text-gray-700">
@@ -92,7 +92,7 @@ Dashboard Admin
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 19V5a2 2 0 012-2h10a2 2 0 012 2v14M4 19h16M9 10h6" />
                     </svg>
-                    Documentation
+                    Doc<span class="hidden sm:block">umentation</span>
                 </a>
             </div>
         </div>

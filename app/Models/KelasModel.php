@@ -13,7 +13,7 @@ class KelasModel extends Model
     protected $useSoftDeletes   = false;
 
     // Kolom yang diizinkan untuk diisi melalui form
-    protected $allowedFields    = ['academic_year_id', 'name'];
+    protected $allowedFields    = ['academic_year_id', 'name', 'teacher_id'];
 
     // Timestamps
     protected $useTimestamps = true;

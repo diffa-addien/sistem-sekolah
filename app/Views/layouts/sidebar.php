@@ -12,6 +12,7 @@ $segment2 = "";
 if (count($uri->getSegments()) >= 2) {
     $segment2 = $uri->getSegment(2);
 }
+$role = session()->get('role');
 ?>
 
 <aside class="z-20 hidden w-64 overflow-y-auto bg-white border-r border-gray-300 md:block flex-shrink-0">
@@ -21,8 +22,8 @@ if (count($uri->getSegments()) >= 2) {
         </a>
         <ul class="mt-5 ">
             <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'dashboard' ? 'active' : '' ?>">
-                <!-- <span class="absolute inset-y-0 left-0 w-1 bg-blue-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span> -->
-                <a href="<?= base_url('admin/dashboard') ?>"
+                <!-- Dynamic Dashboard URL -->
+                <a href="<?= $role == "Wali Murid" ? base_url('wali/dashboard'): base_url('admin/dashboard')?>"
                     class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150"
                     href="#">
                     <svg class="w-5 h-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="2"
@@ -35,6 +36,7 @@ if (count($uri->getSegments()) >= 2) {
             </li>
         </ul>
         <ul>
+            <?php if ($role === 'Admin') : // Menu ini hanya untuk Admin ?>
             <li class="relative px-6 pt-4 pb-3"
                 x-data="{ isOpen: <?= $segment2 == 'tahun-ajaran' || $segment2 == 'kelas' || $segment2 == 'siswa' || $segment2 == 'nama-kegiatan' ? 'true' : 'false' ?> }">
                 <button
@@ -78,8 +80,9 @@ if (count($uri->getSegments()) >= 2) {
                     </li>
                 </ul>
             </li>
+            <?php endif ?>
 
-
+            <?php if ($role === 'Admin' OR $role === 'Guru') : // Menu ini hanya untuk Admin dan Guru ?>
             <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'kehadiran' ? 'active' : '' ?>">
                 <a href="<?= base_url('admin/kehadiran') ?>"
                     class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800"
@@ -92,7 +95,9 @@ if (count($uri->getSegments()) >= 2) {
                     <span class="ml-4">Kehadiran</span>
                 </a>
             </li>
+            <?php endif ?>
 
+            <?php if ($role === 'Admin') : // Menu ini hanya untuk Admin ?>
             <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'kegiatan' ? 'active' : '' ?>">
                 <a href="<?= base_url('admin/kegiatan') ?>"
                     class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800"
@@ -105,7 +110,9 @@ if (count($uri->getSegments()) >= 2) {
                     <span class="ml-4">Catatan Kegiatan</span>
                 </a>
             </li>
+            <?php endif ?>
 
+            <?php if ($role === 'Admin') : // Menu ini hanya untuk Admin ?>
             <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'kenaikan-kelas' ? 'active' : '' ?>">
                 <a href="<?= base_url('admin/kenaikan-kelas') ?>"
                     class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800"
@@ -118,6 +125,7 @@ if (count($uri->getSegments()) >= 2) {
                     <span class="ml-4">Kenaikan Kelas</span>
                 </a>
             </li>
+            <?php endif ?>
 
             <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'laporan' ? 'active' : '' ?>"
                 x-data="{ isOpen: <?= $segment2 == 'laporan' ? 'true' : 'false' ?> }">
@@ -153,6 +161,7 @@ if (count($uri->getSegments()) >= 2) {
                 </ul>
             </li>
 
+            <?php if ($role === 'Admin') : // Menu ini hanya untuk Admin ?>
             <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'user' ? 'active' : '' ?>">
                 <a href="<?= base_url('admin/user') ?>"
                     class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800">
@@ -167,6 +176,7 @@ if (count($uri->getSegments()) >= 2) {
                 </a>
 
             </li>
+            <?php endif ?>
 
         </ul>
     </div>
