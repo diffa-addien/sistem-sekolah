@@ -38,13 +38,21 @@ class KegiatanController extends BaseController
     public function create()
     {
         $rules = [
-            'student_id'        => 'required|is_not_unique[students.id]',
-            'activity_name_id'  => 'required|is_not_unique[activity_names.id]',
-            'activity_date'     => 'required|valid_date',
-            'description'       => 'permit_empty|max_length[500]',
+            'student_id' => 'required|is_not_unique[students.id]',
+            // !! PERUBAHAN DI SINI !!
+            'activity_name_id' => 'required|is_not_unique[activity_names.id]|is_activity_recorded[student_id,activity_date]',
+            'activity_date' => 'required|valid_date',
+            'description' => 'permit_empty|max_length[500]',
         ];
 
-        if (!$this->validate($rules)) {
+        // Siapkan pesan error kustom
+        $messages = [
+            'activity_name_id' => [
+                'is_activity_recorded' => 'Kegiatan yang sama sudah pernah dicatat untuk siswa ini pada tanggal tersebut.'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
@@ -61,11 +69,11 @@ class KegiatanController extends BaseController
         $activityNameModel = new ActivityNameModel();
 
         $data = [
-            'activity'       => $model->find($id),
-            'students'       => $siswaModel->orderBy('full_name', 'ASC')->findAll(),
+            'activity' => $model->find($id),
+            'students' => $siswaModel->orderBy('full_name', 'ASC')->findAll(),
             'activity_names' => $activityNameModel->whereNotIn('type', ['Masuk', 'Pulang'])->orderBy('name', 'ASC')->findAll(),
         ];
-        
+
         if (empty($data['activity'])) {
             throw new \CodeIgniter\Exceptions\PageNotFoundException('Data Kegiatan tidak ditemukan.');
         }
@@ -76,10 +84,10 @@ class KegiatanController extends BaseController
     public function update($id = null)
     {
         $rules = [
-            'student_id'        => 'required|is_not_unique[students.id]',
-            'activity_name_id'  => 'required|is_not_unique[activity_names.id]',
-            'activity_date'     => 'required|valid_date',
-            'description'       => 'permit_empty|max_length[500]',
+            'student_id' => 'required|is_not_unique[students.id]',
+            'activity_name_id' => 'required|is_not_unique[activity_names.id]',
+            'activity_date' => 'required|valid_date',
+            'description' => 'permit_empty|max_length[500]',
         ];
 
         if (!$this->validate($rules)) {
@@ -87,6 +95,19 @@ class KegiatanController extends BaseController
         }
 
         $model = new KegiatanModel();
+
+        // !! LOGIKA BARU: Pengecekan duplikat manual saat update !!
+        $existing = $model->where([
+            'student_id' => $this->request->getPost('student_id'),
+            'activity_name_id' => $this->request->getPost('activity_name_id'),
+            'activity_date' => $this->request->getPost('activity_date'),
+            'id !=' => $id, // Abaikan data yang sedang diedit
+        ])->first();
+
+        if ($existing) {
+            return redirect()->back()->withInput()->with('error', 'Kegiatan yang sama sudah pernah dicatat untuk siswa ini pada tanggal tersebut.');
+        }
+
         $model->update($id, $this->request->getPost());
 
         return redirect()->to('admin/kegiatan')->with('success', 'Data kegiatan berhasil diperbarui!');

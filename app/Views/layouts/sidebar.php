@@ -8,9 +8,12 @@
 
 <?php
 $uri = \Config\Services::uri();
-$segment2 = "";
+$segment2= "";$segment3 = "";
 if (count($uri->getSegments()) >= 2) {
     $segment2 = $uri->getSegment(2);
+}
+if (count($uri->getSegments()) >= 3) {
+    $segment3 = $uri->getSegment(3);
 }
 $role = session()->get('role');
 ?>
@@ -64,19 +67,19 @@ $role = session()->get('role');
                     aria-label="submenu">
                     <li
                         class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment2 == 'tahun-ajaran' ? 'active' : '' ?>">
-                        <a href="<?= base_url('admin/tahun-ajaran') ?>" class="w-full" href="#">Tahun Ajaran</a>
+                        <a href="<?= base_url('admin/tahun-ajaran') ?>" class="inline-flex w-full" href="#">Tahun Ajaran</a>
                     </li>
                     <li
                         class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment2 == 'kelas' ? 'active' : '' ?>">
-                        <a href="<?= base_url('admin/kelas') ?>" class="w-full" href="#">Data Kelas</a>
+                        <a href="<?= base_url('admin/kelas') ?>" class="inline-flex w-full" href="#">Data Kelas</a>
                     </li>
                     <li
                         class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment2 == 'siswa' ? 'active' : '' ?>">
-                        <a href="<?= base_url('admin/siswa') ?>" class="w-full" href="#">Data Siswa</a>
+                        <a href="<?= base_url('admin/siswa') ?>" class="inline-flex w-full" href="#">Data Siswa</a>
                     </li>
                     <li
                         class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment2 == 'nama-kegiatan' ? 'active' : '' ?>">
-                        <a href="<?= base_url('admin/nama-kegiatan') ?>" class="w-full" href="#">Daftar Kegiatan</a>
+                        <a href="<?= base_url('admin/nama-kegiatan') ?>" class="inline-flex w-full" href="#">Daftar Kegiatan</a>
                     </li>
                 </ul>
             </li>
@@ -127,7 +130,8 @@ $role = session()->get('role');
             </li>
             <?php endif ?>
 
-            <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'laporan' ? 'active' : '' ?>"
+            <?php if ($role === 'Admin') : // Menu ini hanya untuk Admin ?>
+            <li class="relative px-6 pt-4 pb-3"
                 x-data="{ isOpen: <?= $segment2 == 'laporan' ? 'true' : 'false' ?> }">
                 <button
                     class="inline-flex items-center justify-between w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800"
@@ -150,16 +154,17 @@ $role = session()->get('role');
                     x-transition:enter-start="opacity-0 max-h-0" x-transition:enter-end="opacity-100 max-h-40"
                     x-transition:leave="transition-all ease-in-out duration-300"
                     x-transition:leave-start="opacity-100 max-h-40" x-transition:leave-end="opacity-0 max-h-0"
-                    class="p-2 my-2 space-y-2 overflow-hidden text-sm font-medium text-sky-950 rounded-md shadow-inner bg-sky-50"
+                    class="py-2 my-2 space-y-2 overflow-hidden text-sm font-medium text-sky-950 rounded-md shadow-inner bg-sky-50"
                     aria-label="submenu">
-                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800">
-                        <a href="<?= base_url('admin/laporan/kehadiran') ?>" class="w-full" href="#">Kehadiran</a>
+                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment3 == 'kehadiran' ? 'active' : '' ?>">
+                        <a href="<?= base_url('admin/laporan/kehadiran') ?>" class="inline-flex w-full" href="#">Kehadiran</a>
                     </li>
-                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800">
-                        <a href="<?= base_url('') ?>" class="w-full" href="#">Kegiatan</a>
+                    <li class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 <?= $segment3 == 'kegiatan' ? 'active' : '' ?>">
+                        <a href="<?= base_url('admin/laporan/kegiatan') ?>" class="inline-flex w-full" href="#">Kegiatan</a>
                     </li>
                 </ul>
             </li>
+            <?php endif ?>
 
             <?php if ($role === 'Admin') : // Menu ini hanya untuk Admin ?>
             <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'user' ? 'active' : '' ?>">

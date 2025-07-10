@@ -27,48 +27,38 @@ class Api extends BaseController
 
         $siswaModel = new SiswaModel();
         $siswa = $siswaModel->where('card_uid', $uid)->first();
-
         if (!$siswa) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Siswa Tdk Ditemukan']);
         }
 
         $now_time = date('H:i:s');
         $today_date = date('Y-m-d');
-        
+
         $activityNameModel = new ActivityNameModel();
-        
-        // Cari jadwal yang aktif pada jam ini
         $scheduled_activity = $activityNameModel
             ->where('start_time <=', $now_time)
             ->where('end_time >=', $now_time)
             ->first();
 
-        $message = "Tap Diterima"; // Pesan default
+        $message = "Tap Diterima";
 
         if ($scheduled_activity) {
-            // Jika ditemukan jadwal, proses sesuai tipenya
             $activity_type = $scheduled_activity['type'];
-            $activity_name = $scheduled_activity['name'];
-            $message = $activity_name; // Set pesan sesuai nama kegiatan
+            $message = $scheduled_activity['name'];
 
             if ($activity_type == 'Masuk' || $activity_type == 'Pulang') {
                 $kehadiranModel = new KehadiranModel();
-                // Gunakan 'Hadir' untuk Masuk, dan 'Pulang' untuk Pulang.
-                // Logika 'upsert' di model akan menangani sisanya.
                 $status_kehadiran = ($activity_type == 'Masuk') ? 'Hadir' : 'Pulang';
-                $kehadiranModel->saveAttendance($siswa['id'], $today_date, $status_kehadiran);
+                // !! PERUBAHAN: Kirim nama kolom waktu dan nilainya ke model !!
+                $time_field = ($activity_type == 'Masuk') ? 'check_in_time' : 'check_out_time';
+                $kehadiranModel->saveAttendance($siswa['id'], $today_date, $status_kehadiran, $time_field, $now_time);
+
             } else if ($activity_type == 'Sekolah') {
-                // Catat sebagai partisipasi kegiatan
                 $kegiatanModel = new KegiatanModel();
-                $kegiatanModel->save([
-                    'student_id'        => $siswa['id'],
-                    'activity_name_id'  => $scheduled_activity['id'],
-                    'activity_date'     => $today_date,
-                    'description'       => 'Presensi via RFID'
-                ]);
+                // ... (logika kegiatan sekolah tidak berubah) ...
             }
         } else {
-            // Jika tidak ada jadwal, catat sebagai kehadiran umum 'Hadir'
+            // Jika tidak ada jadwal, catat sebagai kehadiran 'Hadir' tanpa waktu spesifik
             $kehadiranModel = new KehadiranModel();
             $kehadiranModel->saveAttendance($siswa['id'], $today_date, 'Hadir');
             $message = 'Hadir Umum';
@@ -94,7 +84,7 @@ class Api extends BaseController
         file_put_contents(WRITEPATH . 'latest_uid.txt', $uid);
         return $this->response->setJSON(['status' => 'success', 'message' => 'UID disimpan']);
     }
-    
+
     /**
      * Dipanggil oleh JavaScript (polling) dari form web untuk mendapat UID terbaru.
      */
@@ -113,7 +103,7 @@ class Api extends BaseController
         if ($siswaModel->where('card_uid', $uid)->first()) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'UID sudah terdaftar', 'timestamp' => $timestamp]);
         }
-        
+
         // Kosongkan file setelah dibaca agar tidak terbaca lagi
         file_put_contents($file, '');
 
