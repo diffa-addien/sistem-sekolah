@@ -91,7 +91,7 @@ Dashboard Wali Murid
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-  <a href="<?= site_url('wali/laporan-kegiatan') ?>"
+  <a href="<?= site_url('wali/laporan-kehadiran') ?>"
     class="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
     <div class="flex items-center">
       <div class="p-3 bg-blue-100 rounded-full">
