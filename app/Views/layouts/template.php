@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
 
   <style>
+    /* * {outline: 1px solid blue} */
     /* Simple styling for scrollbar if needed */
     ::-webkit-scrollbar {
       width: 8px;

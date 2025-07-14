@@ -110,6 +110,7 @@ class Api extends BaseController
         return $this->response->setJSON(['status' => 'success', 'message' => 'UID disimpan']);
     }
 
+
     /**
      * Dipanggil oleh JavaScript (polling) dari form web untuk mendapat UID terbaru.
      */
@@ -128,6 +129,7 @@ class Api extends BaseController
         if ($siswaModel->where('card_uid', $uid)->first()) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'UID sudah terdaftar', 'timestamp' => $timestamp]);
         }
+
 
         // Kosongkan file setelah dibaca agar tidak terbaca lagi
         file_put_contents($file, '');

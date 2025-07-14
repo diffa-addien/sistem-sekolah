@@ -23,6 +23,7 @@ Manajemen Siswa
                     <th class="px-4 py-3">NIS</th>
                     <th class="px-4 py-3">Nama Siswa</th>
                     <th class="px-4 py-3">Kelas</th>
+                    <th class="px-4 py-3 text-center">RFID</th>
                     <th class="px-4 py-3">Wali Murid</th>
                     <th class="px-4 py-3 sticky right-0 bg-white z-10">Aksi</th>
                 </tr>
@@ -34,16 +35,46 @@ Manajemen Siswa
                         <td class="px-4 py-3">
                             <div class="flex items-center text-sm">
                                 <div class="relative hidden w-12 h-12 mr-3 rounded-full md:block">
-                                    <img class="object-cover w-full h-full rounded-full"
-                                        src="<?= base_url('uploads/photos/' . ($student['photo'] ?? 'default.png')) ?>"
-                                        alt="Foto <?= esc($student['full_name']) ?>" loading="lazy" />
-                                    <div class="absolute inset-0 rounded-full shadow-inner" aria-hidden="true"></div>
+
+                                    <div class="relative w-full h-full">
+                                        <img class="object-cover w-full h-full rounded-full shadow-md"
+                                            src="<?= base_url('uploads/photos/' . $student['photo']) ?>" alt="Foto Profil"
+                                            loading="lazy"
+                                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div
+                                            class="hidden absolute inset-0 flex items-center justify-center rounded-full bg-sky-900 text-white text-sm font-semibold">
+                                            <?= esc(strtoupper(substr($student['full_name'], 0, 1))) ?>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
                         </td>
                         <td class="px-4 py-3 text-sm"><?= esc($student['nis']) ?></td>
                         <td class="px-4 py-3 text-sm font-bold"><?= esc($student['full_name']) ?></td>
-                        <td class="px-4 py-3 text-sm"><?= "<b>".esc($student['class_name'])."</b> (".esc($student['tahun_kelas']).")" ?></td>
+                        <td class="px-4 py-3 text-sm">
+                            <?= "<b>" . esc($student['class_name']) . "</b> (" . esc($student['tahun_kelas']) . ")" ?>
+                        </td>
+
+                        <td class="px-4 py-3 text-start">
+                            <?php if (!empty($student['card_uid'])): ?>
+                                <span class="inline-flex items-center gap-1 p-1 text-white bg-green-600 rounded-full">
+                                    <svg class="w-4 h-4 " fill="none" stroke="currentColor" stroke-width="2"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </span>
+                            <?php else: ?>
+                                <span class="inline-flex items-center gap-1 p-1 text-white bg-red-300 rounded-full">
+                                    <svg class="w-4 h-4 " fill="none" stroke="currentColor" stroke-width="2"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </span>
+                            <?php endif; ?>
+                        </td>
+
+
                         <td class="px-4 py-3 text-sm"><?= esc($student['parent_name'] ?? 'Belum Ditautkan') ?></td>
                         <td class="px-4 py-3 text-sm sticky right-0 bg-white z-10">
                             <div class="flex items-center space-x-4">

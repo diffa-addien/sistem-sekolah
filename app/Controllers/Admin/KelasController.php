@@ -4,6 +4,7 @@ namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
 use App\Models\KelasModel; // Panggil model
+use App\Models\UserModel; // Panggil model
 use App\Models\TahunAjaranModel; // 1. Panggil model TahunAjaran
 
 class KelasController extends BaseController
@@ -21,48 +22,54 @@ class KelasController extends BaseController
             ->orderBy('classes.id', 'DESC')
             ->findAll();
 
-            // var_dump($data['classes']); die;
+        // var_dump($data['classes']); die;
 
         return view('pages/kelas/index', $data);
     }
 
-    // Method lainnya kita biarkan dulu
     public function new()
     {
         $tahunAjaranModel = new TahunAjaranModel();
-        // 2. Ambil semua tahun ajaran untuk dropdown
-        $data['academicYears'] = $tahunAjaranModel->orderBy('year', 'DESC')->findAll();
-
+        $userModel = new UserModel(); // Buat instance UserModel
+        $data = [
+            'academicYears' => $tahunAjaranModel->orderBy('year', 'DESC')->findAll(),
+            'teachers' => $userModel->where('role', 'Guru')->findAll() // Ambil daftar guru
+        ];
         return view('pages/kelas/form', $data);
     }
+
     public function create()
     {
         $rules = [
             'name' => 'required',
-            'academic_year_id' => 'required|is_not_unique[academic_years.id]'
+            'academic_year_id' => 'required|is_not_unique[academic_years.id]',
+            'teacher_id' => 'permit_empty|is_not_unique[users.id]' // Validasi teacher_id
         ];
 
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        // Simpan data
         $model = new KelasModel();
         $model->save([
-            'name'              => $this->request->getPost('name'),
-            'academic_year_id'  => $this->request->getPost('academic_year_id'),
+            'name' => $this->request->getPost('name'),
+            'academic_year_id' => $this->request->getPost('academic_year_id'),
+            'teacher_id' => $this->request->getPost('teacher_id') ?: null, // Simpan NULL jika kosong
         ]);
 
         return redirect()->to('admin/kelas')->with('success', 'Data Kelas berhasil ditambahkan!');
     }
+
     public function edit($id = null)
     {
         $kelasModel = new KelasModel();
         $tahunAjaranModel = new TahunAjaranModel();
+        $userModel = new UserModel(); // Buat instance UserModel
 
         $data = [
-            'classData'     => $kelasModel->find($id),
+            'classData' => $kelasModel->find($id),
             'academicYears' => $tahunAjaranModel->orderBy('year', 'DESC')->findAll(),
+            'teachers' => $userModel->where('role', 'Guru')->findAll() // Ambil daftar guru
         ];
 
         if (empty($data['classData'])) {
@@ -71,11 +78,13 @@ class KelasController extends BaseController
 
         return view('pages/kelas/form', $data);
     }
+
     public function update($id = null)
     {
         $rules = [
             'name' => 'required',
-            'academic_year_id' => 'required|is_not_unique[academic_years.id]'
+            'academic_year_id' => 'required|is_not_unique[academic_years.id]',
+            'teacher_id' => 'permit_empty|is_not_unique[users.id]' // Validasi teacher_id
         ];
 
         if (!$this->validate($rules)) {
@@ -84,8 +93,9 @@ class KelasController extends BaseController
 
         $model = new KelasModel();
         $model->update($id, [
-            'name'              => $this->request->getPost('name'),
-            'academic_year_id'  => $this->request->getPost('academic_year_id'),
+            'name' => $this->request->getPost('name'),
+            'academic_year_id' => $this->request->getPost('academic_year_id'),
+            'teacher_id' => $this->request->getPost('teacher_id') ?: null, // Simpan NULL jika kosong
         ]);
 
         return redirect()->to('admin/kelas')->with('success', 'Data Kelas berhasil diperbarui!');
@@ -103,7 +113,7 @@ class KelasController extends BaseController
         return redirect()->to('admin/kelas')->with('error', 'Data Kelas tidak ditemukan.');
     }
     public function show($id = null)
-    { 
+    {
         /* ... */
     }
 }

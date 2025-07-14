@@ -36,11 +36,6 @@ $routes->group('admin', ['filter' => 'auth:Admin,Guru'], static function ($route
         'controller' => '\App\Controllers\Admin\UserController'
     ]);
 
-    // Rute untuk Kehadiran
-    $routes->get('kehadiran', 'Admin\KehadiranController::index');
-    $routes->post('kehadiran/simpan', 'Admin\KehadiranController::store');
-    $routes->get('laporan/kehadiran', 'Admin\LaporanController::kehadiran');
-
     $routes->resource('nama-kegiatan', [
         'controller' => '\App\Controllers\Admin\ActivityNameController'
     ]);
@@ -50,6 +45,15 @@ $routes->group('admin', ['filter' => 'auth:Admin,Guru'], static function ($route
 
     $routes->get('kenaikan-kelas', 'Admin\KenaikanKelasController::index');
     $routes->post('kenaikan-kelas/proses', 'Admin\KenaikanKelasController::process');
+
+    // Rute untuk Kehadiran
+    $routes->get('kehadiran', 'Admin\KehadiranController::index');
+    $routes->post('kehadiran/simpan', 'Admin\KehadiranController::store');
+    $routes->get('laporan/kehadiran', 'Admin\LaporanController::kehadiran');
+
+    // !! TAMBAHKAN DUA RUTE INI !!
+    $routes->get('laporan/kegiatan', 'Admin\LaporanController::kegiatanSiswaSelector');
+    $routes->get('laporan/kegiatan/siswa/(:num)', 'Admin\LaporanController::kegiatanSiswa/$1');
 });
 
 // Rute untuk Wali Murid
@@ -59,6 +63,8 @@ $routes->group('wali', ['filter' => 'auth:Wali Murid'], static function ($routes
     $routes->get('kegiatan-harian', 'WaliMuridController::index');
     // API untuk menyimpan/menghapus checklist secara otomatis
     $routes->post('kegiatan-harian/save', 'WaliMuridController::saveActivity');
+    $routes->get('laporan-kegiatan', 'WaliMuridController::laporanKegiatan');
+    $routes->get('laporan-kehadiran', 'WaliMuridController::laporanKehadiran');
 });
 
 // Rute untuk API
