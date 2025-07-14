@@ -68,13 +68,12 @@ class KehadiranController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Data tidak lengkap atau tidak valid.');
         }
 
-        // 2. Panggil method saveAttendance() untuk setiap siswa
         $kehadiranModel = new KehadiranModel();
         foreach ($statuses as $student_id => $status) {
-            $kehadiranModel->saveAttendance($student_id, $date, $status);
+            // Gunakan method baru untuk konsistensi
+            $kehadiranModel->saveOrUpdateAttendance($student_id, $date, ['status' => $status]);
         }
 
-        // 3. Redirect dengan pesan sukses
         return redirect()->to('admin/kehadiran?class_id=' . $class_id . '&date=' . $date)
             ->with('success', 'Data kehadiran berhasil disimpan/diperbarui!');
     }

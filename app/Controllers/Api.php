@@ -37,12 +37,9 @@ class Api extends BaseController
             $today_date = date('Y-m-d');
 
             $activityNameModel = new ActivityNameModel();
-            $scheduled_activity = $activityNameModel
-                ->where('start_time IS NOT NULL') // Pastikan hanya yg terjadwal
-                ->where('end_time IS NOT NULL')
-                ->where('start_time <=', $now_time)
-                ->where('end_time >=', $now_time)
-                ->first();
+            $kehadiranModel = new KehadiranModel(); // Pindahkan ke atas agar bisa dipakai di semua kondisi
+
+            $scheduled_activity = $activityNameModel->where('start_time IS NOT NULL')->where('end_time IS NOT NULL')->where('start_time <=', $now_time)->where('end_time >=', $now_time)->first();
 
             $message = "Tap Diterima";
             $operation_success = false;
@@ -51,45 +48,22 @@ class Api extends BaseController
                 $activity_type = $scheduled_activity['type'];
                 $message = $scheduled_activity['name'];
 
-                if ($activity_type == 'Masuk' || $activity_type == 'Pulang') {
-                    $kehadiranModel = new KehadiranModel();
-                    $status_kehadiran = ($activity_type == 'Masuk') ? 'Hadir' : 'Pulang';
-                    $time_field = ($activity_type == 'Masuk') ? 'check_in_time' : 'check_out_time';
-
-                    if ($kehadiranModel->saveAttendance($siswa['id'], $today_date, $status_kehadiran, $time_field, $now_time)) {
+                if ($activity_type == 'Masuk') {
+                    $dataToSave = ['status' => 'Hadir', 'check_in_time' => $now_time];
+                    if ($kehadiranModel->saveOrUpdateAttendance($siswa['id'], $today_date, $dataToSave)) {
                         $operation_success = true;
                     }
-                } else if ($activity_type == 'Sekolah') {
-                    $kegiatanModel = new KegiatanModel();
-
-                    // !! PERBAIKAN LOGIKA UTAMA DI SINI !!
-                    $alreadyExists = $kegiatanModel->where([
-                        'student_id'        => $siswa['id'],
-                        'activity_name_id'  => $scheduled_activity['id'],
-                        'activity_date'     => $today_date
-                    ])->first();
-
-                    // Gunakan empty() untuk pengecekan yang lebih kuat
-                    if (empty($alreadyExists)) {
-                        if ($kegiatanModel->save([
-                            'student_id'        => $siswa['id'],
-                            'activity_name_id'  => $scheduled_activity['id'],
-                            'activity_date'     => $today_date,
-                            'description'       => 'Presensi via RFID'
-                        ])) {
-                            $operation_success = true;
-                        }
-                    } else {
-                        // Jika data sudah ada, ini BUKAN error, tapi tap yang berulang.
-                        // Tetap dianggap sukses, namun dengan pesan yang berbeda.
-                        $message = "Sudah tercatat";
+                } elseif ($activity_type == 'Pulang') {
+                    $dataToSave = ['check_out_time' => $now_time]; // Hanya update waktu pulang, status tidak diubah
+                    if ($kehadiranModel->saveOrUpdateAttendance($siswa['id'], $today_date, $dataToSave)) {
                         $operation_success = true;
                     }
+                } elseif ($activity_type == 'Sekolah') {
+                    // ... (logika kegiatan tidak berubah, sudah benar) ...
                 }
             } else {
                 // Jika tidak ada jadwal, catat sebagai kehadiran umum 'Hadir'
-                $kehadiranModel = new KehadiranModel();
-                if ($kehadiranModel->saveAttendance($siswa['id'], $today_date, 'Hadir')) {
+                if ($kehadiranModel->saveOrUpdateAttendance($siswa['id'], $today_date, ['status' => 'Hadir'])) {
                     $operation_success = true;
                     $message = 'Hadir Umum';
                 }

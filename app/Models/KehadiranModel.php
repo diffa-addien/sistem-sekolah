@@ -8,47 +8,35 @@ class KehadiranModel extends Model
 {
     protected $table            = 'attendances';
     protected $primaryKey       = 'id';
-    protected $useAutoIncrement = true;
-    protected $returnType       = 'array';
-    protected $useSoftDeletes   = false;
-    
-     protected $allowedFields    = ['student_id', 'attendance_date', 'status', 'description', 'check_in_time', 'check_out_time'];
+    protected $allowedFields    = ['student_id', 'attendance_date', 'status', 'description', 'check_in_time', 'check_out_time'];
+    protected $useTimestamps    = true;
 
-    protected $useTimestamps = true;
-    protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
+    // app/Models/KehadiranModel.php
 
-    public function saveAttendance(int $student_id, string $date, string $status, ?string $time_field = null, ?string $time_value = null)
+    /**
+     * Metode Upsert (Update atau Insert) yang lebih kuat.
+     */
+    public function saveOrUpdateAttendance(int $student_id, string $date, array $data)
     {
         $existing = $this->where([
             'student_id'      => $student_id,
             'attendance_date' => $date
         ])->first();
 
-        // Siapkan data dasar untuk disimpan/diupdate
-        $data = ['status' => $status];
-
-        // Jika ada data waktu yang dikirim
-        if ($time_field && $time_value) {
-            // Jika data sudah ada, hanya update waktu jika kolom waktunya masih kosong
-            if ($existing) {
-                if (empty($existing[$time_field])) {
-                    $data[$time_field] = $time_value;
-                }
-            } else {
-                // Jika data belum ada, langsung masukkan waktu
-                $data[$time_field] = $time_value;
-            }
-        }
-
         if ($existing) {
-            // Jika data sudah ada, UPDATE
+            // UPDATE: Hanya perbarui kolom yang dikirim dalam array $data
             return $this->update($existing['id'], $data);
         } else {
-            // Jika belum ada, INSERT data baru
-            $data['student_id'] = $student_id;
-            $data['attendance_date'] = $date;
-            return $this->insert($data);
+            // INSERT: Buat array data baru yang lengkap untuk baris baru
+            $insertData = [
+                'student_id'      => $student_id,
+                'attendance_date' => $date,
+                'status'          => $data['status'] ?? 'Hadir', // Jika status tdk diset, default ke Hadir
+                'check_in_time'   => $data['check_in_time'] ?? null,
+                'check_out_time'  => $data['check_out_time'] ?? null,
+                'description'     => $data['description'] ?? null
+            ];
+            return $this->insert($insertData);
         }
     }
 }
