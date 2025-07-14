@@ -20,7 +20,6 @@ class Api extends BaseController
      */
     public function processTap()
     {
-        // Lapisan 1: Menangkap semua kemungkinan error tak terduga
         try {
             $uid = $this->request->getPost('uid');
             if (!$uid) {
@@ -39,6 +38,8 @@ class Api extends BaseController
 
             $activityNameModel = new ActivityNameModel();
             $scheduled_activity = $activityNameModel
+                ->where('start_time IS NOT NULL') // Pastikan hanya yg terjadwal
+                ->where('end_time IS NOT NULL')
                 ->where('start_time <=', $now_time)
                 ->where('end_time >=', $now_time)
                 ->first();
@@ -55,42 +56,51 @@ class Api extends BaseController
                     $status_kehadiran = ($activity_type == 'Masuk') ? 'Hadir' : 'Pulang';
                     $time_field = ($activity_type == 'Masuk') ? 'check_in_time' : 'check_out_time';
 
-                    // Lapisan 2: Cek apakah operasi save/update berhasil
                     if ($kehadiranModel->saveAttendance($siswa['id'], $today_date, $status_kehadiran, $time_field, $now_time)) {
                         $operation_success = true;
                     }
                 } else if ($activity_type == 'Sekolah') {
                     $kegiatanModel = new KegiatanModel();
-                    $alreadyExists = $kegiatanModel->where(['student_id' => $siswa['id'], 'activity_name_id'  => $scheduled_activity['id'], 'activity_date' => $today_date])->first();
 
-                    if (!$alreadyExists) {
-                        // Lapisan 2: Cek apakah operasi save berhasil
-                        if ($kegiatanModel->save(['student_id' => $siswa['id'], 'activity_name_id'  => $scheduled_activity['id'], 'activity_date' => $today_date, 'description' => 'Presensi via RFID'])) {
+                    // !! PERBAIKAN LOGIKA UTAMA DI SINI !!
+                    $alreadyExists = $kegiatanModel->where([
+                        'student_id'        => $siswa['id'],
+                        'activity_name_id'  => $scheduled_activity['id'],
+                        'activity_date'     => $today_date
+                    ])->first();
+
+                    // Gunakan empty() untuk pengecekan yang lebih kuat
+                    if (empty($alreadyExists)) {
+                        if ($kegiatanModel->save([
+                            'student_id'        => $siswa['id'],
+                            'activity_name_id'  => $scheduled_activity['id'],
+                            'activity_date'     => $today_date,
+                            'description'       => 'Presensi via RFID'
+                        ])) {
                             $operation_success = true;
                         }
                     } else {
+                        // Jika data sudah ada, ini BUKAN error, tapi tap yang berulang.
+                        // Tetap dianggap sukses, namun dengan pesan yang berbeda.
                         $message = "Sudah tercatat";
-                        $operation_success = true; // Dianggap sukses karena data sudah ada
+                        $operation_success = true;
                     }
                 }
             } else {
+                // Jika tidak ada jadwal, catat sebagai kehadiran umum 'Hadir'
                 $kehadiranModel = new KehadiranModel();
-                // Lapisan 2: Cek apakah operasi save berhasil
                 if ($kehadiranModel->saveAttendance($siswa['id'], $today_date, 'Hadir')) {
                     $operation_success = true;
                     $message = 'Hadir Umum';
                 }
             }
 
-            // Kirim response berdasarkan hasil operasi
             if ($operation_success) {
                 return $this->response->setJSON(['status' => 'success', 'message' => $message]);
             } else {
-                // Jika ada operasi database yang gagal
                 return $this->response->setStatusCode(500)->setJSON(['status' => 'error', 'message' => 'Gagal Simpan DB']);
             }
         } catch (\Exception $e) {
-            // Jika terjadi error apapun yang tidak tertangani, log error dan kirim response aman
             log_message('error', '[API] ' . $e->getMessage());
             return $this->response->setStatusCode(500)->setJSON(['status' => 'error', 'message' => 'Error Server']);
         }
