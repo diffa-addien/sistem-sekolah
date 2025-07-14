@@ -58,8 +58,31 @@ class Api extends BaseController
                     if ($kehadiranModel->saveOrUpdateAttendance($siswa['id'], $today_date, $dataToSave)) {
                         $operation_success = true;
                     }
-                } elseif ($activity_type == 'Sekolah') {
-                    // ... (logika kegiatan tidak berubah, sudah benar) ...
+                } else if ($activity_type == 'Sekolah') {
+                    $kegiatanModel = new KegiatanModel();
+
+                    // !! LOGIKA BARU: Cek duplikasi secara manual, sama seperti di Controller Web !!
+                    $alreadyExists = $kegiatanModel->where([
+                        'student_id'        => $siswa['id'],
+                        'activity_name_id'  => $scheduled_activity['id'],
+                        'activity_date'     => $today_date
+                    ])->first();
+
+                    if (empty($alreadyExists)) {
+                        // Hanya simpan jika data benar-benar belum ada
+                        if ($kegiatanModel->save([
+                            'student_id'        => $siswa['id'],
+                            'activity_name_id'  => $scheduled_activity['id'],
+                            'activity_date'     => $today_date,
+                            'description'       => 'Presensi via RFID'
+                        ])) {
+                            $operation_success = true;
+                        }
+                    } else {
+                        // Jika data sudah ada, anggap sukses dan beri pesan yang sesuai
+                        $message = "Sudah tercatat";
+                        $operation_success = true;
+                    }
                 }
             } else {
                 // Jika tidak ada jadwal, catat sebagai kehadiran umum 'Hadir'
