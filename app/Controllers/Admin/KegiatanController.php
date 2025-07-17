@@ -27,9 +27,21 @@ class KegiatanController extends BaseController
     {
         $siswaModel = new SiswaModel();
         $activityNameModel = new ActivityNameModel();
+        $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
+
+        $students = [];
+        if ($activeYear) {
+            // Ambil siswa yang terdaftar di tahun ajaran aktif
+            $students = $siswaModel
+                ->select('students.id, students.full_name')
+                ->join('enrollments', 'enrollments.student_id = students.id')
+                ->where('enrollments.academic_year_id', $activeYear['id'])
+                ->orderBy('students.full_name', 'ASC')
+                ->findAll();
+        }
+
         $data = [
-            'students' => $siswaModel->where('status', 'Aktif')->orderBy('full_name', 'ASC')->findAll(),
-            // Ambil nama kegiatan yang BUKAN untuk presensi tap
+            'students' => $students,
             'activity_names' => $activityNameModel->whereNotIn('type', ['Masuk', 'Pulang'])->orderBy('name', 'ASC')->findAll(),
         ];
         return view('pages/kegiatan/form', $data);
@@ -39,25 +51,36 @@ class KegiatanController extends BaseController
     {
         $rules = [
             'student_id' => 'required|is_not_unique[students.id]',
-            // !! PERUBAHAN DI SINI !!
             'activity_name_id' => 'required|is_not_unique[activity_names.id]|is_activity_recorded[student_id,activity_date]',
-            'activity_date' => 'required|valid_date',
+            'activity_date' => 'required',
             'description' => 'permit_empty|max_length[500]',
         ];
-
-        // Siapkan pesan error kustom
-        $messages = [
-            'activity_name_id' => [
-                'is_activity_recorded' => 'Kegiatan yang sama sudah pernah dicatat untuk siswa ini pada tanggal tersebut.'
-            ]
-        ];
+        $messages = ['activity_name_id' => ['is_activity_recorded' => 'Kegiatan yang sama sudah pernah dicatat untuk siswa ini pada tanggal tersebut.']];
 
         if (!$this->validate($rules, $messages)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        $model = new KegiatanModel();
-        $model->save($this->request->getPost());
+        $student_id = $this->request->getPost('student_id');
+
+        // !! LOGIKA DIPERBAIKI: Selalu gunakan Tahun Ajaran Aktif !!
+        $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
+        if (!$activeYear) {
+            return redirect()->back()->with('error', 'Tidak ada Tahun Ajaran yang sedang aktif. Harap atur terlebih dahulu.');
+        }
+
+        $enrollment = (new \App\Models\EnrollmentModel())->where(['student_id' => $student_id, 'academic_year_id' => $activeYear['id']])->first();
+        if (!$enrollment) {
+            return redirect()->back()->with('error', 'Siswa tidak terdaftar di kelas pada tahun ajaran aktif.');
+        }
+
+        // Siapkan data untuk disimpan
+        $dataToSave = $this->request->getPost();
+        $dataToSave['class_id'] = $enrollment['class_id'];
+        $dataToSave['academic_year_id'] = $activeYear['id'];
+
+        $model = new \App\Models\KegiatanModel();
+        $model->save($dataToSave);
 
         return redirect()->to('admin/kegiatan')->with('success', 'Data kegiatan berhasil dicatat!');
     }
@@ -67,10 +90,22 @@ class KegiatanController extends BaseController
         $model = new KegiatanModel();
         $siswaModel = new SiswaModel();
         $activityNameModel = new ActivityNameModel();
+        $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
+
+        $students = [];
+        if ($activeYear) {
+            // Ambil siswa yang terdaftar di tahun ajaran aktif
+            $students = $siswaModel
+                ->select('students.id, students.full_name')
+                ->join('enrollments', 'enrollments.student_id = students.id')
+                ->where('enrollments.academic_year_id', $activeYear['id'])
+                ->orderBy('students.full_name', 'ASC')
+                ->findAll();
+        }
 
         $data = [
             'activity' => $model->find($id),
-            'students' => $siswaModel->orderBy('full_name', 'ASC')->findAll(),
+            'students' => $students,
             'activity_names' => $activityNameModel->whereNotIn('type', ['Masuk', 'Pulang'])->orderBy('name', 'ASC')->findAll(),
         ];
 
@@ -108,7 +143,21 @@ class KegiatanController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Kegiatan yang sama sudah pernah dicatat untuk siswa ini pada tanggal tersebut.');
         }
 
-        $model->update($id, $this->request->getPost());
+        // Dapatkan konteks kelas & tahun ajaran
+        $student_id = $this->request->getPost('student_id');
+        $activity_date = $this->request->getPost('activity_date');
+        $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first(); // Ini bisa disempurnakan seperti di create()
+        $enrollment = (new \App\Models\EnrollmentModel())->where(['student_id' => $student_id, 'academic_year_id' => $activeYear['id']])->first();
+
+        if (!$enrollment) {
+            return redirect()->back()->with('error', 'Siswa tidak terdaftar di kelas pada tahun ajaran aktif.');
+        }
+
+        $dataToUpdate = $this->request->getPost();
+        $dataToUpdate['class_id'] = $enrollment['class_id'];
+        $dataToUpdate['academic_year_id'] = $activeYear['id'];
+
+        $model->update($id, $dataToUpdate);
 
         return redirect()->to('admin/kegiatan')->with('success', 'Data kegiatan berhasil diperbarui!');
     }

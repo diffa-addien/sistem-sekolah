@@ -14,16 +14,7 @@ class SiswaModel extends Model
 
     // Kolom yang diizinkan untuk diisi melalui form.
     // Ini mencakup semua data siswa, termasuk foreign key dan foto.
-    protected $allowedFields    = [
-        'class_id',
-        'user_id',
-        'nis',
-        'card_uid',
-        'full_name',
-        'gender',
-        'birth_date',
-        'photo'
-    ];
+    protected $allowedFields = ['user_id', 'nis', 'card_uid', 'full_name', 'gender', 'birth_date', 'photo'];
 
     // Timestamps
     protected $useTimestamps = true;

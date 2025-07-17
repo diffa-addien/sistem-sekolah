@@ -53,7 +53,7 @@ Manajemen Siswa
                         <td class="px-4 py-3 text-sm"><?= esc($student['nis']) ?></td>
                         <td class="px-4 py-3 text-sm font-bold"><?= esc($student['full_name']) ?></td>
                         <td class="px-4 py-3 text-sm">
-                            <?= "<b>" . esc($student['class_name']) . "</b> (" . esc($student['tahun_kelas']) . ")" ?>
+                            <?= "<b>" . esc($student['class_name'] ?? 'Belum ada kelas') . "</b> (" . esc($student['tahun_kelas'] ?? 'T/A Blm Diatur') . ")" ?>
                         </td>
 
                         <td class="px-4 py-3 text-start">

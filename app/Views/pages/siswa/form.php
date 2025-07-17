@@ -59,16 +59,19 @@
             </div>
 
             <div class="space-y-6">
-                <div>
-                    <label for="class_id" class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
+                <div class="mb-4">
+                    <label for="class_id" class="block mb-2 text-sm font-medium">Kelas (Tahun Ajaran Aktif)</label>
                     <select name="class_id"
-                        class="w-full p-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-all"
+                        class="block w-full mt-1 text-sm rounded-lg border-gray-300 bg-gray-50 focus:border-purple-400 focus:ring focus:ring-purple-300"
                         required>
-                        <option value="">Pilih Kelas</option>
-                        <?php $selectedClass = old('class_id', $student['class_id'] ?? ''); ?>
+                        <option value="">-- Pilih Kelas --</option>
+                        <?php
+                        // Ambil class_id dari enrollment saat ini, atau dari input lama
+                        $selectedClass = old('class_id', $current_enrollment['class_id'] ?? '');
+                        ?>
                         <?php foreach ($classes as $class): ?>
                             <option value="<?= $class['id'] ?>" <?= $selectedClass == $class['id'] ? 'selected' : '' ?>>
-                                <?= esc($class['name']) ?> (<?= esc($class['academic_year']) ?>)
+                                <?= esc($class['name']) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>

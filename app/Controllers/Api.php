@@ -28,7 +28,6 @@ class Api extends BaseController
 
             $siswaModel = new SiswaModel();
             $siswa = $siswaModel->where('card_uid', $uid)->first();
-
             if (!$siswa) {
                 return $this->response->setJSON(['status' => 'error', 'message' => 'Siswa Tdk Ditemukan']);
             }
@@ -36,9 +35,24 @@ class Api extends BaseController
             $now_time = date('H:i:s');
             $today_date = date('Y-m-d');
 
-            $activityNameModel = new ActivityNameModel();
-            $kehadiranModel = new KehadiranModel(); // Pindahkan ke atas agar bisa dipakai di semua kondisi
+            // Cari pendaftaran & kelas siswa saat ini di tahun ajaran aktif
+            $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
+            if (!$activeYear) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'T/A Tidak Aktif']);
+            }
 
+            $enrollment = (new \App\Models\EnrollmentModel())->where(['student_id' => $siswa['id'], 'academic_year_id' => $activeYear['id']])->first();
+            if (!$enrollment) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'Tdk Terdaftar di Kelas']);
+            }
+
+            // Siapkan data konteks (kelas & tahun ajaran) untuk disimpan
+            $context = [
+                'class_id' => $enrollment['class_id'],
+                'academic_year_id' => $activeYear['id'],
+            ];
+
+            $activityNameModel = new ActivityNameModel();
             $scheduled_activity = $activityNameModel->where('start_time IS NOT NULL')->where('end_time IS NOT NULL')->where('start_time <=', $now_time)->where('end_time >=', $now_time)->first();
 
             $message = "Tap Diterima";
@@ -48,45 +62,31 @@ class Api extends BaseController
                 $activity_type = $scheduled_activity['type'];
                 $message = $scheduled_activity['name'];
 
-                if ($activity_type == 'Masuk') {
-                    $dataToSave = ['status' => 'Hadir', 'check_in_time' => $now_time];
+                if ($activity_type == 'Masuk' || $activity_type == 'Pulang') {
+                    $kehadiranModel = new KehadiranModel();
+                    $time_field = ($activity_type == 'Masuk') ? 'check_in_time' : 'check_out_time';
+                    $dataToSave = array_merge($context, ['status' => 'Hadir', $time_field => $now_time]);
                     if ($kehadiranModel->saveOrUpdateAttendance($siswa['id'], $today_date, $dataToSave)) {
                         $operation_success = true;
                     }
-                } elseif ($activity_type == 'Pulang') {
-                    $dataToSave = ['check_out_time' => $now_time]; // Hanya update waktu pulang, status tidak diubah
-                    if ($kehadiranModel->saveOrUpdateAttendance($siswa['id'], $today_date, $dataToSave)) {
-                        $operation_success = true;
-                    }
-                } else if ($activity_type == 'Sekolah') {
+                } elseif ($activity_type == 'Sekolah') {
                     $kegiatanModel = new KegiatanModel();
-
-                    // !! LOGIKA BARU: Cek duplikasi secara manual, sama seperti di Controller Web !!
-                    $alreadyExists = $kegiatanModel->where([
-                        'student_id'        => $siswa['id'],
-                        'activity_name_id'  => $scheduled_activity['id'],
-                        'activity_date'     => $today_date
-                    ])->first();
+                    $alreadyExists = $kegiatanModel->where(['student_id' => $siswa['id'], 'activity_name_id' => $scheduled_activity['id'], 'activity_date' => $today_date])->first();
 
                     if (empty($alreadyExists)) {
-                        // Hanya simpan jika data benar-benar belum ada
-                        if ($kegiatanModel->save([
-                            'student_id'        => $siswa['id'],
-                            'activity_name_id'  => $scheduled_activity['id'],
-                            'activity_date'     => $today_date,
-                            'description'       => 'Presensi via RFID'
-                        ])) {
+                        $dataToSave = array_merge($context, ['student_id' => $siswa['id'], 'activity_name_id' => $scheduled_activity['id'], 'activity_date' => $today_date, 'description' => 'Presensi via RFID']);
+                        if ($kegiatanModel->save($dataToSave)) {
                             $operation_success = true;
                         }
                     } else {
-                        // Jika data sudah ada, anggap sukses dan beri pesan yang sesuai
                         $message = "Sudah tercatat";
                         $operation_success = true;
                     }
                 }
             } else {
-                // Jika tidak ada jadwal, catat sebagai kehadiran umum 'Hadir'
-                if ($kehadiranModel->saveOrUpdateAttendance($siswa['id'], $today_date, ['status' => 'Hadir'])) {
+                $kehadiranModel = new KehadiranModel();
+                $dataToSave = array_merge($context, ['status' => 'Hadir']);
+                if ($kehadiranModel->saveOrUpdateAttendance($siswa['id'], $today_date, $dataToSave)) {
                     $operation_success = true;
                     $message = 'Hadir Umum';
                 }
@@ -97,8 +97,9 @@ class Api extends BaseController
             } else {
                 return $this->response->setStatusCode(500)->setJSON(['status' => 'error', 'message' => 'Gagal Simpan DB']);
             }
+
         } catch (\Exception $e) {
-            log_message('error', '[API] ' . $e->getMessage());
+            log_message('error', '[API] ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
             return $this->response->setStatusCode(500)->setJSON(['status' => 'error', 'message' => 'Error Server']);
         }
     }

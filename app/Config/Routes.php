@@ -54,6 +54,8 @@ $routes->group('admin', ['filter' => 'auth:Admin,Guru'], static function ($route
     // !! TAMBAHKAN DUA RUTE INI !!
     $routes->get('laporan/kegiatan', 'Admin\LaporanController::kegiatanSiswaSelector');
     $routes->get('laporan/kegiatan/siswa/(:num)', 'Admin\LaporanController::kegiatanSiswa/$1');
+    $routes->get('api/classes-by-year/(:num)', 'Admin\LaporanController::getClassesByYear/$1');
+    $routes->get('api/students-by-class/(:num)', 'Admin\LaporanController::getStudentsByClass/$1');
 });
 
 // Rute untuk Wali Murid
