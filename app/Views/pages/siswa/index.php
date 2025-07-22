@@ -79,7 +79,15 @@ Manajemen Siswa
                             </div>
                         </td>
                         <td class="px-4 py-3 text-sm"><?= esc($student['nis']) ?></td>
-                        <td class="px-4 py-3 text-sm font-bold"><?= esc($student['full_name']) ?></td>
+                        <td class="px-4 py-3 text-sm font-bold">
+                            <?php if ($student['total_enrollments'] > 0): ?>
+                                <a href="<?= site_url('admin/laporan/siswa/' . $student['id']) ?>" class="hover:underline text-purple-600">
+                                    <?= esc($student['full_name']) ?>
+                                </a>
+                            <?php else: ?>
+                                <span><?= esc($student['full_name']) ?></span>
+                            <?php endif; ?>
+                        </td>
                         <td class="px-4 py-3 text-sm">
                             <b><?= esc($student['class_name'] ?? 'N/A') ?></b>
                             <p class="text-xs text-gray-500"><?= esc($student['tahun_kelas'] ?? 'Belum Terdaftar') ?></p>

@@ -12,21 +12,32 @@ class UserController extends BaseController
     {
         $model = new UserModel();
 
-        // Ambil filter role dari URL
+        // Ambil filter dan pencarian dari URL
         $role = $this->request->getGet('role');
+        $search = $this->request->getGet('search');
 
         // Siapkan query dasar
         $query = $model->orderBy('id', 'DESC');
 
-        // Jika ada filter role yang valid, tambahkan kondisi where
+        // Terapkan filter role jika ada
         if ($role && in_array($role, ['Admin', 'Guru', 'Wali Murid'])) {
             $query->where('role', $role);
         }
 
+        // Terapkan pencarian jika ada
+        if ($search) {
+            $query->groupStart()
+                ->like('name', $search)
+                ->orLike('username', $search)
+                ->groupEnd();
+        }
+
         // Kirim data hasil query dan filter yang dipilih ke view
         $data = [
-            'users' => $query->findAll(),
-            'selected_role' => $role
+            'users' => $query->paginate(15, 'users'), // Paginasi 15 item per halaman
+            'pager' => $model->pager,
+            'selected_role' => $role,
+            'search_keyword' => $search
         ];
 
         return view('pages/user/index', $data);

@@ -19,9 +19,11 @@ class SiswaController extends BaseController
         $filter_status = $this->request->getGet('status');
         $search = $this->request->getGet('search');
 
-        // Siapkan query dasar
+        // Tambahkan subquery untuk menghitung total enrollment
+        $total_enrollments_subquery = '(SELECT COUNT(*) FROM enrollments WHERE enrollments.student_id = students.id) as total_enrollments';
+
         $query = $siswaModel
-            ->select('students.*, classes.name as class_name, users.name as parent_name, ay.year as tahun_kelas, en.status as enrollment_status')
+            ->select('students.*, classes.name as class_name, users.name as parent_name, ay.year as tahun_kelas, en.status as enrollment_status, ' . $total_enrollments_subquery)
             ->join('users', 'users.id = students.user_id', 'left');
 
         // Logika JOIN dan WHERE yang dinamis berdasarkan filter
@@ -32,7 +34,6 @@ class SiswaController extends BaseController
             // Join tambahan untuk kolom display (akan menghasilkan NULL)
             $query->join('classes', 'classes.id = en.class_id', 'left');
             $query->join('academic_years ay', 'ay.id = en.academic_year_id', 'left');
-
         } else {
             // Untuk semua kasus lain, kita butuh data enrollment, jadi pakai INNER JOIN
             $query->join('enrollments en', 'en.student_id = students.id');
@@ -251,7 +252,5 @@ class SiswaController extends BaseController
 
         return redirect()->to('admin/siswa')->with('error', 'Data Siswa tidak ditemukan.');
     }
-    public function show($id = null)
-    {
-    }
+    public function show($id = null) {}
 }

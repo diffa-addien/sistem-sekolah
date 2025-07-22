@@ -21,7 +21,6 @@ class LaporanController extends BaseController
         $enrollmentModel = new EnrollmentModel();
         $activeYear = (new TahunAjaranModel())->where('status', 'Aktif')->first();
 
-        // Ambil filter dari URL
         $class_id = $this->request->getGet('class_id');
         $month = $this->request->getGet('month') ?? date('m');
         $year = $this->request->getGet('year') ?? date('Y');
@@ -36,32 +35,22 @@ class LaporanController extends BaseController
         ];
 
         if ($class_id) {
-            // 1. Ambil dulu daftar siswa yang terdaftar di kelas ini
             $students_in_class = $enrollmentModel
                 ->select('students.id, students.full_name, students.nis')
                 ->join('students', 'students.id = enrollments.student_id')
-                ->where('enrollments.class_id', $class_id)
-                ->findAll();
+                ->where('enrollments.class_id', $class_id)->findAll();
 
             if (!empty($students_in_class)) {
                 $student_ids = array_column($students_in_class, 'id');
+                $raw_data = $kehadiranModel->whereIn('student_id', $student_ids)->where('MONTH(attendance_date)', $month)->where('YEAR(attendance_date)', $year)->findAll();
 
-                // 2. Ambil data kehadiran untuk semua siswa tersebut pada periode yang dipilih
-                $raw_data = $kehadiranModel
-                    ->whereIn('student_id', $student_ids)
-                    ->where('MONTH(attendance_date)', $month)
-                    ->where('YEAR(attendance_date)', $year)
-                    ->findAll();
-
-                // 3. Proses data menjadi format pivot
                 $pivotedData = [];
-                // Inisialisasi dengan semua siswa di kelas agar siswa yang alfa tetap muncul
                 foreach ($students_in_class as $student) {
                     $pivotedData[$student['nis']]['full_name'] = $student['full_name'];
+                    $pivotedData[$student['nis']]['student_id'] = $student['id']; // !! BARIS PENTING !!
                     $pivotedData[$student['nis']]['attendances'] = [];
                 }
                 foreach ($raw_data as $row) {
-                    // Cari nis siswa berdasarkan id
                     $student_nis = '';
                     foreach ($students_in_class as $student) {
                         if ($student['id'] == $row['student_id']) {
@@ -76,13 +65,11 @@ class LaporanController extends BaseController
                 $data['reportData'] = $pivotedData;
             }
 
-            // 4. Buat header tanggal
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
             for ($d = 1; $d <= $daysInMonth; $d++) {
                 $data['dateHeaders'][] = "$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-" . str_pad($d, 2, '0', STR_PAD_LEFT);
             }
         }
-
         return view('pages/laporan/kehadiran', $data);
     }
 
@@ -197,6 +184,11 @@ class LaporanController extends BaseController
             ->orderBy('academic_years.year', 'DESC')
             ->findAll();
 
+        // Jika sama sekali tidak punya riwayat, kembalikan dengan pesan error
+        if (empty($enrollment_history)) {
+            return redirect()->to('admin/siswa')->with('error', 'Siswa "' . esc($student['full_name']) . '" belum memiliki riwayat pendaftaran kelas.');
+        }
+
         $selected_enrollment_id = $this->request->getGet('enrollment_id') ?? ($enrollment_history[0]['id'] ?? null);
 
         $data = [
@@ -273,5 +265,4 @@ class LaporanController extends BaseController
 
         return view('pages/laporan/detail_siswa', $data);
     }
-
 }

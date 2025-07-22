@@ -49,28 +49,33 @@
                 </thead>
                 <tbody class="bg-white divide-y">
                     <?php if (!empty($reportData)): foreach ($reportData as $nis => $data) : ?>
-                    <tr class="text-gray-700">
-                        <td class="px-4 py-3 text-sm font-semibold sticky left-0 bg-white"><?= esc($data['full_name']) ?></td>
-                        <?php foreach ($dateHeaders as $date) : ?>
-                            <?php 
-                                $status = $data['attendances'][$date] ?? 'Alfa';
-                                $badge_color = 'bg-gray-200 text-gray-700'; // Default untuk strip
-                                if ($status == 'Hadir') $badge_color = 'bg-green-100 text-green-700';
-                                if ($status == 'Sakit') $badge_color = 'bg-yellow-100 text-yellow-700';
-                                if ($status == 'Izin') $badge_color = 'bg-blue-100 text-blue-700';
-                                if ($status == 'Alfa') $badge_color = 'bg-red-100 text-red-700';
-                            ?>
-                            <td class="px-2 py-3 text-center">
-                                <span class="px-2 py-1 text-xs font-bold leading-tight rounded-full <?= $badge_color ?>">
-                                    <?= substr($status, 0, 1) ?>
-                                </span>
-                            </td>
-                        <?php endforeach; ?>
-                    </tr>
-                    <?php endforeach; elseif ($selected_class_id): ?>
-                    <tr>
-                        <td colspan="<?= count($dateHeaders) + 1 ?>" class="text-center py-4 text-gray-500">Tidak ada data kehadiran yang ditemukan untuk kelas dan periode yang dipilih.</td>
-                    </tr>
+                            <tr class="text-gray-700">
+                                <td class="px-4 py-3 text-sm font-semibold sticky left-0 bg-white">
+                                    <a href="<?= site_url('admin/laporan/siswa/' . $data['student_id']) ?>" Title="Lihat Laporan Selengkapnya" class="hover:underline text-purple-600">
+                                        <?= esc($data['full_name']) ?>
+                                    </a>
+                                </td>
+                                <?php foreach ($dateHeaders as $date) : ?>
+                                    <?php
+                                    $status = $data['attendances'][$date] ?? 'Alfa';
+                                    $badge_color = 'bg-gray-200 text-gray-700'; // Default untuk strip
+                                    if ($status == 'Hadir') $badge_color = 'bg-green-100 text-green-700';
+                                    if ($status == 'Sakit') $badge_color = 'bg-yellow-100 text-yellow-700';
+                                    if ($status == 'Izin') $badge_color = 'bg-blue-100 text-blue-700';
+                                    if ($status == 'Alfa') $badge_color = 'bg-red-100 text-red-700';
+                                    ?>
+                                    <td class="px-2 py-3 text-center">
+                                        <span class="px-2 py-1 text-xs font-bold leading-tight rounded-full <?= $badge_color ?>">
+                                            <?= substr($status, 0, 1) ?>
+                                        </span>
+                                    </td>
+                                <?php endforeach; ?>
+                            </tr>
+                        <?php endforeach;
+                    elseif ($selected_class_id): ?>
+                        <tr>
+                            <td colspan="<?= count($dateHeaders) + 1 ?>" class="text-center py-4 text-gray-500">Tidak ada data kehadiran yang ditemukan untuk kelas dan periode yang dipilih.</td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
