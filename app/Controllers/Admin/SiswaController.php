@@ -12,59 +12,59 @@ use App\Models\TahunAjaranModel; // Panggil model baru
 class SiswaController extends BaseController
 {
     public function index()
-{
-    $siswaModel = new SiswaModel();
-    $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
+    {
+        $siswaModel = new SiswaModel();
+        $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
 
-    $filter_status = $this->request->getGet('status');
-    $search = $this->request->getGet('search');
+        $filter_status = $this->request->getGet('status');
+        $search = $this->request->getGet('search');
 
-    // Siapkan query dasar
-    $query = $siswaModel
-        ->select('students.*, classes.name as class_name, users.name as parent_name, ay.year as tahun_kelas, en.status as enrollment_status')
-        ->join('users', 'users.id = students.user_id', 'left');
+        // Siapkan query dasar
+        $query = $siswaModel
+            ->select('students.*, classes.name as class_name, users.name as parent_name, ay.year as tahun_kelas, en.status as enrollment_status')
+            ->join('users', 'users.id = students.user_id', 'left');
 
-    // Logika JOIN dan WHERE yang dinamis berdasarkan filter
-    if ($filter_status === 'belum_terdaftar') {
-        // Cari siswa yang TIDAK punya enrollment di tahun ajaran aktif
-        $query->join('enrollments en', "en.student_id = students.id AND en.academic_year_id = " . ($activeYear['id'] ?? 0), 'left');
-        $query->where('en.id IS NULL');
-        // Join tambahan untuk kolom display (akan menghasilkan NULL)
-        $query->join('classes', 'classes.id = en.class_id', 'left');
-        $query->join('academic_years ay', 'ay.id = en.academic_year_id', 'left');
-    
-    } else {
-        // Untuk semua kasus lain, kita butuh data enrollment, jadi pakai INNER JOIN
-        $query->join('enrollments en', 'en.student_id = students.id');
-        $query->join('classes', 'classes.id = en.class_id');
-        $query->join('academic_years ay', 'ay.id = en.academic_year_id');
+        // Logika JOIN dan WHERE yang dinamis berdasarkan filter
+        if ($filter_status === 'belum_terdaftar') {
+            // Cari siswa yang TIDAK punya enrollment di tahun ajaran aktif
+            $query->join('enrollments en', "en.student_id = students.id AND en.academic_year_id = " . ($activeYear['id'] ?? 0), 'left');
+            $query->where('en.id IS NULL');
+            // Join tambahan untuk kolom display (akan menghasilkan NULL)
+            $query->join('classes', 'classes.id = en.class_id', 'left');
+            $query->join('academic_years ay', 'ay.id = en.academic_year_id', 'left');
 
-        if ($filter_status === 'aktif') {
-            $query->where('en.academic_year_id', $activeYear['id'] ?? 0);
-            $query->where('en.status', 'Aktif');
-        } elseif ($filter_status === 'riwayat') { // Ganti 'lulus' menjadi 'riwayat' agar lebih umum
-             $query->whereIn('en.status', ['Lulus', 'Naik Kelas', 'Tinggal Kelas', 'Keluar']);
+        } else {
+            // Untuk semua kasus lain, kita butuh data enrollment, jadi pakai INNER JOIN
+            $query->join('enrollments en', 'en.student_id = students.id');
+            $query->join('classes', 'classes.id = en.class_id');
+            $query->join('academic_years ay', 'ay.id = en.academic_year_id');
+
+            if ($filter_status === 'aktif') {
+                $query->where('en.academic_year_id', $activeYear['id'] ?? 0);
+                $query->where('en.status', 'Aktif');
+            } elseif ($filter_status === 'riwayat') { // Ganti 'lulus' menjadi 'riwayat' agar lebih umum
+                $query->whereIn('en.status', ['Lulus', 'Naik Kelas', 'Tinggal Kelas', 'Keluar']);
+            }
+            // Jika filter status kosong, akan menampilkan semua siswa yang pernah terdaftar
         }
-        // Jika filter status kosong, akan menampilkan semua siswa yang pernah terdaftar
+
+        // Terapkan pencarian jika ada
+        if ($search) {
+            $query->groupStart()
+                ->like('students.full_name', $search)
+                ->orLike('students.nis', $search)
+                ->groupEnd();
+        }
+
+        $data = [
+            'students' => $query->orderBy('students.full_name', 'ASC')->paginate(15, 'students'),
+            'pager' => $siswaModel->pager,
+            'selected_status' => $filter_status,
+            'search_keyword' => $search
+        ];
+
+        return view('pages/siswa/index', $data);
     }
-
-    // Terapkan pencarian jika ada
-    if ($search) {
-        $query->groupStart()
-              ->like('students.full_name', $search)
-              ->orLike('students.nis', $search)
-              ->groupEnd();
-    }
-
-    $data = [
-        'students' => $query->orderBy('students.full_name', 'ASC')->paginate(15, 'students'),
-        'pager' => $siswaModel->pager,
-        'selected_status' => $filter_status,
-        'search_keyword' => $search
-    ];
-
-    return view('pages/siswa/index', $data);
-}
 
     public function new()
     {
@@ -147,34 +147,83 @@ class SiswaController extends BaseController
 
     public function update($id = null)
     {
-        // ... (Validasi data siswa seperti biasa)
+        $siswaModel = new \App\Models\SiswaModel();
+        $enrollmentModel = new \App\Models\EnrollmentModel();
+        $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
+
+        // 1. Validasi
+        $rules = [
+            'nis' => "required|is_unique[students.nis,id,{$id}]",
+            'card_uid' => "permit_empty|is_unique[students.card_uid,id,{$id}]",
+            'full_name' => 'required',
+            'class_id' => 'permit_empty|is_not_unique[classes.id]',
+            'gender' => 'required|in_list[Laki-laki,Perempuan]',
+            'birth_date' => 'required',
+            'user_id' => 'permit_empty|is_not_unique[users.id]',
+            'photo' => 'max_size[photo,1024]|is_image[photo]|mime_in[photo,image/jpg,image/jpeg,image/png]'
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
 
         $db = \Config\Database::connect();
-        $db->transStart();
+        $db->transStart(); // Mulai transaksi
 
-        // 1. Update data utama siswa
-        $siswaModel = new SiswaModel();
-        $siswaData = [ /* ... data dari form ... */];
-        $siswaModel->update($id, $siswaData);
+        // 2. Siapkan data untuk tabel 'students'
+        $oldStudentData = $siswaModel->find($id);
+        $dataToUpdate = [
+            'nis' => $this->request->getPost('nis'),
+            'full_name' => $this->request->getPost('full_name'),
+            'user_id' => $this->request->getPost('user_id') ?: null,
+            'gender' => $this->request->getPost('gender'),
+            'birth_date' => $this->request->getPost('birth_date'),
+            'card_uid' => $this->request->getPost('card_uid') ?: null,
+        ];
 
-        // 2. Update atau buat data pendaftaran (enrollment)
-        $activeYear = (new TahunAjaranModel())->where('status', 'Aktif')->first();
+        // 3. Logika Upload Foto
+        $photoFile = $this->request->getFile('photo');
+        if ($photoFile->isValid() && !$photoFile->hasMoved()) {
+            $photoName = $oldStudentData['photo'];
+            if ($photoName && $photoName !== 'default.png' && file_exists(FCPATH . 'uploads/photos/' . $photoName)) {
+                unlink(FCPATH . 'uploads/photos/' . $photoName);
+            }
+            $newPhotoName = $photoFile->getRandomName();
+            $photoFile->move(FCPATH . 'uploads/photos', $newPhotoName);
+            $dataToUpdate['photo'] = $newPhotoName;
+        }
+
+        // 4. Update tabel 'students'
+        $siswaModel->update($id, $dataToUpdate);
+
+        // 5. Logika "Upsert" untuk tabel 'enrollments'
         $classId = $this->request->getPost('class_id');
         if ($classId && $activeYear) {
-            $enrollmentModel = new EnrollmentModel();
             $existingEnrollment = $enrollmentModel->where(['student_id' => $id, 'academic_year_id' => $activeYear['id']])->first();
 
             if ($existingEnrollment) {
-                // Jika sudah ada, update kelasnya
-                $enrollmentModel->update($existingEnrollment['id'], ['class_id' => $classId]);
+                // Jika sudah ada, hanya update jika class_id benar-benar berubah
+                if ($existingEnrollment['class_id'] != $classId) {
+                    $enrollmentModel->update($existingEnrollment['id'], ['class_id' => $classId]);
+                }
             } else {
-                // Jika belum ada, buat baru
-                $enrollmentModel->insert(['student_id' => $id, 'class_id' => $classId, 'academic_year_id' => $activeYear['id']]);
+                // Jika belum ada pendaftaran di tahun aktif, buat baru
+                $enrollmentModel->insert([
+                    'student_id' => $id,
+                    'class_id' => $classId,
+                    'academic_year_id' => $activeYear['id'],
+                    'status' => 'Aktif'
+                ]);
             }
         }
 
-        $db->transComplete();
-        // ... (redirect dengan pesan sukses atau error)
+        $db->transComplete(); // Selesaikan transaksi
+
+        if ($db->transStatus() === false) {
+            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui data siswa.');
+        }
+
+        return redirect()->to('admin/siswa')->with('success', 'Data Siswa berhasil diperbarui!');
     }
 
     // ... (method delete tidak berubah)

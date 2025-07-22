@@ -189,7 +189,6 @@ class LaporanController extends BaseController
             throw new \CodeIgniter\Exceptions\PageNotFoundException('Siswa tidak ditemukan.');
         }
 
-        // Ambil riwayat pendaftaran untuk filter
         $enrollment_history = $enrollmentModel
             ->select('enrollments.id, enrollments.academic_year_id, classes.name as class_name, academic_years.year as academic_year')
             ->join('classes', 'classes.id = enrollments.class_id')
@@ -198,7 +197,6 @@ class LaporanController extends BaseController
             ->orderBy('academic_years.year', 'DESC')
             ->findAll();
 
-        // Tentukan pendaftaran mana yang akan ditampilkan (berdasarkan filter atau default yang terbaru)
         $selected_enrollment_id = $this->request->getGet('enrollment_id') ?? ($enrollment_history[0]['id'] ?? null);
 
         $data = [
@@ -206,7 +204,14 @@ class LaporanController extends BaseController
             'enrollment_history' => $enrollment_history,
             'selected_enrollment_id' => $selected_enrollment_id,
             'attendances' => [],
-            'activities_by_day' => [] // Variabel baru untuk kegiatan yang sudah dirangkum
+            'activities_by_day' => [],
+            'summary' => [ // Variabel baru untuk ringkasan
+                'hadir' => 0,
+                'sakit' => 0,
+                'izin' => 0,
+                'kegiatan' => 0,
+                'hadir_tertinggi' => 0
+            ]
         ];
 
         if ($selected_enrollment_id) {
@@ -219,14 +224,38 @@ class LaporanController extends BaseController
             }
 
             if ($selected_enrollment) {
-                // !! PERBAIKAN QUERY KEHADIRAN !!
-                $data['attendances'] = $kehadiranModel
+                $academic_year_id = $selected_enrollment['academic_year_id'];
+
+                $attendances = $kehadiranModel
                     ->where('student_id', $student_id)
-                    ->where('academic_year_id', $selected_enrollment['academic_year_id'])
-                    ->orderBy('attendance_date', 'DESC') // Urutkan dari terbaru
+                    ->where('academic_year_id', $academic_year_id)
+                    ->findAll();
+                $data['attendances'] = $attendances;
+
+                $activities = $kegiatanModel
+                    ->where('student_id', $student_id)
+                    ->where('academic_year_id', $academic_year_id)
                     ->findAll();
 
-                // Ambil data kegiatan mentah
+                // 1. Hitung statistik kehadiran siswa ini
+                $attendanceCounts = array_count_values(array_column($attendances, 'status'));
+                $data['summary']['hadir'] = $attendanceCounts['Hadir'] ?? 0;
+                $data['summary']['sakit'] = $attendanceCounts['Sakit'] ?? 0;
+                $data['summary']['izin'] = $attendanceCounts['Izin'] ?? 0;
+
+                // 2. Hitung total kegiatan
+                $data['summary']['kegiatan'] = count($activities);
+
+                // 3. Hitung kehadiran tertinggi di angkatan (enrollment) yang sama
+                $highestAttendance = $kehadiranModel
+                    ->select('COUNT(id) as total_days')
+                    ->where('academic_year_id', $academic_year_id)
+                    ->groupBy('student_id')
+                    ->orderBy('total_days', 'DESC')
+                    ->limit(1)
+                    ->first();
+                $data['summary']['hari_aktif_tertinggi'] = $highestAttendance ? $highestAttendance['total_days'] : 0;
+
                 $raw_activities = $kegiatanModel
                     ->select('activities.*, activity_names.name as activity_name')
                     ->join('activity_names', 'activity_names.id = activities.activity_name_id')
@@ -234,8 +263,6 @@ class LaporanController extends BaseController
                     ->where('academic_year_id', $selected_enrollment['academic_year_id'])
                     ->orderBy('activity_date', 'DESC')
                     ->findAll();
-
-                // !! LOGIKA BARU: Rangkum kegiatan per hari !!
                 $grouped_activities = [];
                 foreach ($raw_activities as $act) {
                     $grouped_activities[$act['activity_date']][] = $act;
