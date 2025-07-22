@@ -97,53 +97,65 @@ Laporan Aktivitas Siswa
 
 <?= $this->section('scripts') ?>
 <script>
-    $(document).ready(function () {
-        const notyf = new Notyf({ duration: 2000, position: { x: 'right', y: 'top' } });
-        const studentId = <?= $student['id'] ?>;
-        const selectedDate = '<?= $selectedDate ?>';
+$(document).ready(function () {
+    const notyf = new Notyf({ duration: 3000, position: { x: 'right', y: 'top' }, dismissible: true });
+    const studentId = <?= $student['id'] ?>;
+    const selectedDate = '<?= service('request')->getGet('date') ?? date('Y-m-d') ?>';
 
-        function saveActivity(activityId, isChecked) {
-            $.ajax({
-                url: "<?= site_url('wali/kegiatan-harian/save') ?>",
-                method: 'POST',
-                data: {
-                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
-                    student_id: studentId,
-                    activity_name_id: activityId,
-                    date: selectedDate,
-                    is_checked: isChecked
-                },
-                success: function (response) {
-                    if (response.status !== 'success') {
-                        notyf.error('Gagal menyimpan.');
-                    }
-                },
-                error: function () {
-                    notyf.error('Terjadi kesalahan koneksi.');
+    function saveActivity(activityId, isChecked) {
+        
+        // !! TAMBAHKAN INI UNTUK DEBUGGING !!
+        console.log("Mengirim data:", {
+            student_id: studentId,
+            activity_name_id: activityId,
+            date: selectedDate,
+            is_checked: isChecked
+        });
+
+        $.ajax({
+            url: "<?= site_url('wali/kegiatan-harian/save') ?>",
+            method: 'POST',
+            data: {
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+                student_id: studentId,
+                activity_name_id: activityId,
+                date: selectedDate,
+                is_checked: isChecked
+            },
+            dataType: 'json', // Pastikan jQuery mengharapkan JSON
+            success: function (response) {
+                if (response.status !== 'success') {
+                    // Tampilkan pesan error spesifik dari controller
+                    notyf.error(response.message || 'Gagal menyimpan.');
                 }
-            });
-        }
-
-        $('input[type="checkbox"]').on('change', function () {
-            const checkbox = $(this);
-            const isChecked = checkbox.is(':checked');
-            const activityId = checkbox.data('activity-id');
-            const activityCard = checkbox.closest('.p-4');
-
-            if (isChecked) {
-                activityCard.addClass('bg-green-50');
-                activityCard.find('.text-sm.font-semibold').text('Selesai').removeClass('text-gray-500').addClass('text-green-600');
-                saveActivity(activityId, true);
-            } else {
-                if (confirm('Anda yakin ingin membatalkan kegiatan ini?')) {
-                    activityCard.removeClass('bg-green-50');
-                    activityCard.find('.text-sm.font-semibold').text('Belum').removeClass('text-green-600').addClass('text-gray-500');
-                    saveActivity(activityId, false);
-                } else {
-                    checkbox.prop('checked', true);
-                }
+            },
+            error: function () {
+                notyf.error('Terjadi kesalahan koneksi.');
             }
         });
+    }
+
+    // Event listener untuk checkbox (tidak berubah)
+    $('input[type="checkbox"]').on('change', function () {
+        const checkbox = $(this);
+        const isChecked = checkbox.is(':checked');
+        const activityId = checkbox.data('activity-id');
+        const activityCard = checkbox.closest('.p-4');
+
+        if (isChecked) {
+            activityCard.addClass('bg-green-50');
+            activityCard.find('.text-sm.font-semibold').text('Selesai').removeClass('text-gray-500').addClass('text-green-600');
+            saveActivity(activityId, true);
+        } else {
+            if (confirm('Anda yakin ingin membatalkan kegiatan ini?')) {
+                activityCard.removeClass('bg-green-50');
+                activityCard.find('.text-sm.font-semibold').text('Belum').removeClass('text-green-600').addClass('text-gray-500');
+                saveActivity(activityId, false);
+            } else {
+                checkbox.prop('checked', true);
+            }
+        }
     });
+});
 </script>
 <?= $this->endSection() ?>

@@ -56,6 +56,9 @@ $routes->group('admin', ['filter' => 'auth:Admin,Guru'], static function ($route
     $routes->get('laporan/kegiatan/siswa/(:num)', 'Admin\LaporanController::kegiatanSiswa/$1');
     $routes->get('api/classes-by-year/(:num)', 'Admin\LaporanController::getClassesByYear/$1');
     $routes->get('api/students-by-class/(:num)', 'Admin\LaporanController::getStudentsByClass/$1');
+
+    // Di dalam grup 'admin'
+    $routes->get('laporan/siswa/(:num)', 'Admin\LaporanController::laporanSiswa/$1');
 });
 
 // Rute untuk Wali Murid
@@ -67,6 +70,9 @@ $routes->group('wali', ['filter' => 'auth:Wali Murid'], static function ($routes
     $routes->post('kegiatan-harian/save', 'WaliMuridController::saveActivity');
     $routes->get('laporan-kegiatan', 'WaliMuridController::laporanKegiatan');
     $routes->get('laporan-kehadiran', 'WaliMuridController::laporanKehadiran');
+
+    // Di dalam grup 'wali'
+    $routes->get('laporan-siswa', 'WaliMuridController::laporanSiswa');
 });
 
 // Rute untuk API

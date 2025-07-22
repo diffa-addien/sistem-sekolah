@@ -18,7 +18,8 @@ class LaporanController extends BaseController
     {
         $kelasModel = new KelasModel();
         $kehadiranModel = new KehadiranModel();
-        $tahunAjaranModel = new TahunAjaranModel();
+        $enrollmentModel = new EnrollmentModel();
+        $activeYear = (new TahunAjaranModel())->where('status', 'Aktif')->first();
 
         // Ambil filter dari URL
         $class_id = $this->request->getGet('class_id');
@@ -26,7 +27,7 @@ class LaporanController extends BaseController
         $year = $this->request->getGet('year') ?? date('Y');
 
         $data = [
-            'classes' => $kelasModel->findAll(), // Ambil semua kelas untuk filter
+            'classes' => $activeYear ? $kelasModel->where('academic_year_id', $activeYear['id'])->findAll() : [],
             'selected_class_id' => $class_id,
             'selected_month' => $month,
             'selected_year' => $year,
@@ -35,27 +36,47 @@ class LaporanController extends BaseController
         ];
 
         if ($class_id) {
-            // Query sekarang mengambil data dari attendances yang sudah memiliki class_id
-            $raw_data = $kehadiranModel
-                ->select('students.full_name, students.nis, attendances.attendance_date, attendances.status')
-                ->join('students', 'students.id = attendances.student_id')
-                // !! PERBAIKAN UTAMA: Menggunakan attendances.class_id !!
-                ->where('attendances.class_id', $class_id)
-                ->where('MONTH(attendances.attendance_date)', $month)
-                ->where('YEAR(attendances.attendance_date)', $year)
-                ->orderBy('students.full_name', 'ASC')
-                ->orderBy('attendances.attendance_date', 'ASC')
+            // 1. Ambil dulu daftar siswa yang terdaftar di kelas ini
+            $students_in_class = $enrollmentModel
+                ->select('students.id, students.full_name, students.nis')
+                ->join('students', 'students.id = enrollments.student_id')
+                ->where('enrollments.class_id', $class_id)
                 ->findAll();
 
-            // Proses data menjadi format pivot (logika ini tidak berubah)
-            $pivotedData = [];
-            foreach ($raw_data as $row) {
-                $pivotedData[$row['nis']]['full_name'] = $row['full_name'];
-                $pivotedData[$row['nis']]['attendances'][$row['attendance_date']] = $row['status'];
-            }
-            $data['reportData'] = $pivotedData;
+            if (!empty($students_in_class)) {
+                $student_ids = array_column($students_in_class, 'id');
 
-            // Buat header tanggal untuk tabel (logika ini tidak berubah)
+                // 2. Ambil data kehadiran untuk semua siswa tersebut pada periode yang dipilih
+                $raw_data = $kehadiranModel
+                    ->whereIn('student_id', $student_ids)
+                    ->where('MONTH(attendance_date)', $month)
+                    ->where('YEAR(attendance_date)', $year)
+                    ->findAll();
+
+                // 3. Proses data menjadi format pivot
+                $pivotedData = [];
+                // Inisialisasi dengan semua siswa di kelas agar siswa yang alfa tetap muncul
+                foreach ($students_in_class as $student) {
+                    $pivotedData[$student['nis']]['full_name'] = $student['full_name'];
+                    $pivotedData[$student['nis']]['attendances'] = [];
+                }
+                foreach ($raw_data as $row) {
+                    // Cari nis siswa berdasarkan id
+                    $student_nis = '';
+                    foreach ($students_in_class as $student) {
+                        if ($student['id'] == $row['student_id']) {
+                            $student_nis = $student['nis'];
+                            break;
+                        }
+                    }
+                    if ($student_nis) {
+                        $pivotedData[$student_nis]['attendances'][$row['attendance_date']] = $row['status'];
+                    }
+                }
+                $data['reportData'] = $pivotedData;
+            }
+
+            // 4. Buat header tanggal
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
             for ($d = 1; $d <= $daysInMonth; $d++) {
                 $data['dateHeaders'][] = "$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-" . str_pad($d, 2, '0', STR_PAD_LEFT);
@@ -155,4 +176,75 @@ class LaporanController extends BaseController
 
         return view('pages/laporan/kegiatan_siswa', $data);
     }
+
+    public function laporanSiswa($student_id)
+    {
+        $siswaModel = new SiswaModel();
+        $enrollmentModel = new EnrollmentModel();
+        $kehadiranModel = new KehadiranModel();
+        $kegiatanModel = new KegiatanModel();
+
+        $student = $siswaModel->find($student_id);
+        if (!$student) {
+            throw new \CodeIgniter\Exceptions\PageNotFoundException('Siswa tidak ditemukan.');
+        }
+
+        // Ambil riwayat pendaftaran untuk filter
+        $enrollment_history = $enrollmentModel
+            ->select('enrollments.id, enrollments.academic_year_id, classes.name as class_name, academic_years.year as academic_year')
+            ->join('classes', 'classes.id = enrollments.class_id')
+            ->join('academic_years', 'academic_years.id = enrollments.academic_year_id')
+            ->where('enrollments.student_id', $student_id)
+            ->orderBy('academic_years.year', 'DESC')
+            ->findAll();
+
+        // Tentukan pendaftaran mana yang akan ditampilkan (berdasarkan filter atau default yang terbaru)
+        $selected_enrollment_id = $this->request->getGet('enrollment_id') ?? ($enrollment_history[0]['id'] ?? null);
+
+        $data = [
+            'student' => $student,
+            'enrollment_history' => $enrollment_history,
+            'selected_enrollment_id' => $selected_enrollment_id,
+            'attendances' => [],
+            'activities_by_day' => [] // Variabel baru untuk kegiatan yang sudah dirangkum
+        ];
+
+        if ($selected_enrollment_id) {
+            $selected_enrollment = null;
+            foreach ($enrollment_history as $enroll) {
+                if ($enroll['id'] == $selected_enrollment_id) {
+                    $selected_enrollment = $enroll;
+                    break;
+                }
+            }
+
+            if ($selected_enrollment) {
+                // !! PERBAIKAN QUERY KEHADIRAN !!
+                $data['attendances'] = $kehadiranModel
+                    ->where('student_id', $student_id)
+                    ->where('academic_year_id', $selected_enrollment['academic_year_id'])
+                    ->orderBy('attendance_date', 'DESC') // Urutkan dari terbaru
+                    ->findAll();
+
+                // Ambil data kegiatan mentah
+                $raw_activities = $kegiatanModel
+                    ->select('activities.*, activity_names.name as activity_name')
+                    ->join('activity_names', 'activity_names.id = activities.activity_name_id')
+                    ->where('student_id', $student_id)
+                    ->where('academic_year_id', $selected_enrollment['academic_year_id'])
+                    ->orderBy('activity_date', 'DESC')
+                    ->findAll();
+
+                // !! LOGIKA BARU: Rangkum kegiatan per hari !!
+                $grouped_activities = [];
+                foreach ($raw_activities as $act) {
+                    $grouped_activities[$act['activity_date']][] = $act;
+                }
+                $data['activities_by_day'] = $grouped_activities;
+            }
+        }
+
+        return view('pages/laporan/detail_siswa', $data);
+    }
+
 }

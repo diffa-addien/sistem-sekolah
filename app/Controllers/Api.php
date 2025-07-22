@@ -26,8 +26,9 @@ class Api extends BaseController
                 return $this->response->setJSON(['status' => 'error', 'message' => 'UID Kosong']);
             }
 
-            $siswaModel = new SiswaModel();
+            $siswaModel = new \App\Models\SiswaModel();
             $siswa = $siswaModel->where('card_uid', $uid)->first();
+
             if (!$siswa) {
                 return $this->response->setJSON(['status' => 'error', 'message' => 'Siswa Tdk Ditemukan']);
             }
@@ -35,8 +36,7 @@ class Api extends BaseController
             $now_time = date('H:i:s');
             $today_date = date('Y-m-d');
 
-            // Cari pendaftaran & kelas siswa saat ini di tahun ajaran aktif
-            $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
+            $activeYear = (new \App\Models\TahunAjaranModel())->where('start_date <=', $today_date)->where('end_date >=', $today_date)->first();
             if (!$activeYear) {
                 return $this->response->setJSON(['status' => 'error', 'message' => 'T/A Tidak Aktif']);
             }
@@ -46,13 +46,9 @@ class Api extends BaseController
                 return $this->response->setJSON(['status' => 'error', 'message' => 'Tdk Terdaftar di Kelas']);
             }
 
-            // Siapkan data konteks (kelas & tahun ajaran) untuk disimpan
-            $context = [
-                'class_id' => $enrollment['class_id'],
-                'academic_year_id' => $activeYear['id'],
-            ];
+            $context = ['class_id' => $enrollment['class_id'], 'academic_year_id' => $activeYear['id']];
 
-            $activityNameModel = new ActivityNameModel();
+            $activityNameModel = new \App\Models\ActivityNameModel();
             $scheduled_activity = $activityNameModel->where('start_time IS NOT NULL')->where('end_time IS NOT NULL')->where('start_time <=', $now_time)->where('end_time >=', $now_time)->first();
 
             $message = "Tap Diterima";
@@ -63,14 +59,14 @@ class Api extends BaseController
                 $message = $scheduled_activity['name'];
 
                 if ($activity_type == 'Masuk' || $activity_type == 'Pulang') {
-                    $kehadiranModel = new KehadiranModel();
+                    $kehadiranModel = new \App\Models\KehadiranModel();
                     $time_field = ($activity_type == 'Masuk') ? 'check_in_time' : 'check_out_time';
                     $dataToSave = array_merge($context, ['status' => 'Hadir', $time_field => $now_time]);
                     if ($kehadiranModel->saveOrUpdateAttendance($siswa['id'], $today_date, $dataToSave)) {
                         $operation_success = true;
                     }
                 } elseif ($activity_type == 'Sekolah') {
-                    $kegiatanModel = new KegiatanModel();
+                    $kegiatanModel = new \App\Models\KegiatanModel();
                     $alreadyExists = $kegiatanModel->where(['student_id' => $siswa['id'], 'activity_name_id' => $scheduled_activity['id'], 'activity_date' => $today_date])->first();
 
                     if (empty($alreadyExists)) {
@@ -84,7 +80,7 @@ class Api extends BaseController
                     }
                 }
             } else {
-                $kehadiranModel = new KehadiranModel();
+                $kehadiranModel = new \App\Models\KehadiranModel();
                 $dataToSave = array_merge($context, ['status' => 'Hadir']);
                 if ($kehadiranModel->saveOrUpdateAttendance($siswa['id'], $today_date, $dataToSave)) {
                     $operation_success = true;

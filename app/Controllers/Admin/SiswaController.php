@@ -16,22 +16,52 @@ class SiswaController extends BaseController
     $siswaModel = new SiswaModel();
     $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
 
-    // Query diubah untuk menggunakan alias 'tahun_kelas'
-    $query = $siswaModel
-        ->select('students.*, classes.name as class_name, users.name as parent_name, academic_years.year as tahun_kelas')
-        ->join('enrollments', "enrollments.student_id = students.id", 'left')
-        ->join('classes', 'classes.id = enrollments.class_id', 'left')
-        ->join('academic_years', 'academic_years.id = enrollments.academic_year_id', 'left')
-        ->join('users', 'users.id = students.user_id', 'left')
-        ->orderBy('students.full_name', 'ASC');
+    $filter_status = $this->request->getGet('status');
+    $search = $this->request->getGet('search');
 
-    if ($activeYear) {
-        $query->where('enrollments.academic_year_id', $activeYear['id']);
+    // Siapkan query dasar
+    $query = $siswaModel
+        ->select('students.*, classes.name as class_name, users.name as parent_name, ay.year as tahun_kelas, en.status as enrollment_status')
+        ->join('users', 'users.id = students.user_id', 'left');
+
+    // Logika JOIN dan WHERE yang dinamis berdasarkan filter
+    if ($filter_status === 'belum_terdaftar') {
+        // Cari siswa yang TIDAK punya enrollment di tahun ajaran aktif
+        $query->join('enrollments en', "en.student_id = students.id AND en.academic_year_id = " . ($activeYear['id'] ?? 0), 'left');
+        $query->where('en.id IS NULL');
+        // Join tambahan untuk kolom display (akan menghasilkan NULL)
+        $query->join('classes', 'classes.id = en.class_id', 'left');
+        $query->join('academic_years ay', 'ay.id = en.academic_year_id', 'left');
+    
     } else {
-        $query->where('enrollments.academic_year_id IS NULL');
+        // Untuk semua kasus lain, kita butuh data enrollment, jadi pakai INNER JOIN
+        $query->join('enrollments en', 'en.student_id = students.id');
+        $query->join('classes', 'classes.id = en.class_id');
+        $query->join('academic_years ay', 'ay.id = en.academic_year_id');
+
+        if ($filter_status === 'aktif') {
+            $query->where('en.academic_year_id', $activeYear['id'] ?? 0);
+            $query->where('en.status', 'Aktif');
+        } elseif ($filter_status === 'riwayat') { // Ganti 'lulus' menjadi 'riwayat' agar lebih umum
+             $query->whereIn('en.status', ['Lulus', 'Naik Kelas', 'Tinggal Kelas', 'Keluar']);
+        }
+        // Jika filter status kosong, akan menampilkan semua siswa yang pernah terdaftar
     }
 
-    $data['students'] = $query->findAll();
+    // Terapkan pencarian jika ada
+    if ($search) {
+        $query->groupStart()
+              ->like('students.full_name', $search)
+              ->orLike('students.nis', $search)
+              ->groupEnd();
+    }
+
+    $data = [
+        'students' => $query->orderBy('students.full_name', 'ASC')->paginate(15, 'students'),
+        'pager' => $siswaModel->pager,
+        'selected_status' => $filter_status,
+        'search_keyword' => $search
+    ];
 
     return view('pages/siswa/index', $data);
 }

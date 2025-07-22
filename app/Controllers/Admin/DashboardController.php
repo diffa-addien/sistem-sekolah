@@ -7,6 +7,8 @@ use App\Models\SiswaModel;
 use App\Models\KelasModel;
 use App\Models\UserModel;
 use App\Models\KehadiranModel;
+use App\Models\EnrollmentModel;
+use App\Models\TahunAjaranModel;
 
 class DashboardController extends BaseController
 {
@@ -16,13 +18,19 @@ class DashboardController extends BaseController
         $kelasModel = new KelasModel();
         $userModel = new UserModel();
         $kehadiranModel = new KehadiranModel();
+        $enrollmentModel = new EnrollmentModel();
+        $tahunAjaranModel = new TahunAjaranModel();
 
-        // 1. Data untuk Kartu Statistik
+        // Cari tahun ajaran yang aktif
+        $activeYear = $tahunAjaranModel->where('status', 'Aktif')->first();
+        $activeYearId = $activeYear ? $activeYear['id'] : 0;
+
+        // 1. Data untuk Kartu Statistik (dengan logika baru)
         $data['stats'] = [
-            'total_students' => $siswaModel->where('status', 'Aktif')->countAllResults(),
-            'total_classes' => $kelasModel->join('academic_years', 'academic_years.id = classes.academic_year_id')
-                ->where('academic_years.status', 'Aktif')
-                ->countAllResults(),
+            // Hitung siswa yang memiliki pendaftaran 'Aktif' di tahun ajaran aktif
+            'total_students' => $enrollmentModel->where('academic_year_id', $activeYearId)->where('status', 'Aktif')->countAllResults(),
+            // Hitung kelas yang ada di tahun ajaran aktif
+            'total_classes' => $kelasModel->where('academic_year_id', $activeYearId)->countAllResults(),
             'total_teachers' => $userModel->where('role', 'Guru')->countAllResults(),
             'total_parents' => $userModel->where('role', 'Wali Murid')->countAllResults(),
         ];
@@ -38,7 +46,7 @@ class DashboardController extends BaseController
             ->groupBy(['attendance_date', 'status'])
             ->findAll();
 
-        // Proses data mentah menjadi format yang siap dipakai oleh ApexCharts
+        // ... (sisa logika pemrosesan grafik tidak berubah)
         $chart_data = [];
         $categories = [];
         $series = [
@@ -46,37 +54,26 @@ class DashboardController extends BaseController
             ['name' => 'Sakit', 'data' => []],
             ['name' => 'Izin', 'data' => []]
         ];
-
-        // Inisialisasi data 7 hari dengan nilai 0
-        for ($i = 0; $i < 7; $i++) {
+        for ($i = 6; $i >= 0; $i--) { // Urutan dari kiri ke kanan (lama ke baru)
             $date = date('Y-m-d', strtotime("-$i days"));
-            $categories[$date] = date('D, d M', strtotime($date)); // Format: Sun, 05 Jul
+            $categories[$date] = date('D, d M', strtotime($date));
             $chart_data[$date] = ['Hadir' => 0, 'Sakit' => 0, 'Izin' => 0];
         }
-
-        // Isi data dari database
         foreach ($attendance_raw as $row) {
             if (isset($chart_data[$row['attendance_date']][$row['status']])) {
-                $chart_data[$row['attendance_date']][$row['status']] = (int)$row['total'];
+                $chart_data[$row['attendance_date']][$row['status']] = (int) $row['total'];
             }
         }
-
-        // Urutkan data sesuai urutan tanggal
-        ksort($chart_data);
-        ksort($categories);
-
         foreach ($chart_data as $data_point) {
             $series[0]['data'][] = $data_point['Hadir'];
             $series[1]['data'][] = $data_point['Sakit'];
             $series[2]['data'][] = $data_point['Izin'];
         }
-
         $data['attendanceChart'] = [
             'categories' => array_values($categories),
             'series' => $series
         ];
 
-        // Mengirim data ke view
         return view('pages/dashboard', $data);
     }
 }

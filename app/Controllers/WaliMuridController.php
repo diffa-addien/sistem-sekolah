@@ -14,21 +14,33 @@ class WaliMuridController extends BaseController
     {
         $siswaModel = new SiswaModel();
         $kehadiranModel = new KehadiranModel();
-        
-        $parent_user_id = session()->get('user_id');
-        
-        $student = $siswaModel
-            ->select('students.*, classes.name as class_name')
-            ->join('classes', 'classes.id = students.class_id', 'left')
-            ->where('students.user_id', $parent_user_id)
-            ->first();
+        $enrollmentModel = new EnrollmentModel();
 
+        $parent_user_id = session()->get('user_id');
+
+        // Cari data siswa yang terhubung dengan akun wali murid ini
+        $student = $siswaModel->where('user_id', $parent_user_id)->first();
         if (!$student) {
             return view('wali/no_student_linked');
         }
-        
+
+        // !! LOGIKA BARU: Cari kelas siswa di tahun ajaran aktif !!
+        $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
+        $current_enrollment = null;
+        if ($activeYear) {
+            $current_enrollment = $enrollmentModel
+                ->select('classes.name as class_name')
+                ->join('classes', 'classes.id = enrollments.class_id')
+                ->where('enrollments.student_id', $student['id'])
+                ->where('enrollments.academic_year_id', $activeYear['id'])
+                ->first();
+        }
+
+        // Gabungkan nama kelas ke data siswa
+        $student['class_name'] = $current_enrollment['class_name'] ?? null;
+
         $todays_attendance = $kehadiranModel->where([
-            'student_id'      => $student['id'],
+            'student_id' => $student['id'],
             'attendance_date' => date('Y-m-d')
         ])->first();
 
@@ -52,7 +64,7 @@ class WaliMuridController extends BaseController
         }
 
         $home_activities = $activityNameModel->where('type', 'Rumah')->findAll();
-        
+
         $recorded_activities_raw = $kegiatanModel
             ->where('student_id', $student['id'])
             ->where('activity_date >=', date('Y-m-d', strtotime('-6 days')))
@@ -71,12 +83,12 @@ class WaliMuridController extends BaseController
 
         return view('wali/kegiatan_harian', $data);
     }
-    
+
     public function laporanKehadiran()
     {
         $siswaModel = new SiswaModel();
         $kehadiranModel = new KehadiranModel();
-        
+
         $student = $siswaModel->where('user_id', session()->get('user_id'))->first();
         if (!$student) {
             return view('wali/no_student_linked');
@@ -112,7 +124,7 @@ class WaliMuridController extends BaseController
         $kegiatanModel = new KegiatanModel();
         $enrollmentModel = new EnrollmentModel();
         $activityNameModel = new ActivityNameModel();
-    
+
         $student = $siswaModel->where('user_id', session()->get('user_id'))->first();
         if (!$student) {
             return view('wali/no_student_linked');
@@ -129,29 +141,29 @@ class WaliMuridController extends BaseController
         $filter_class_id = $this->request->getGet('filter_class_id');
         $start_date = $this->request->getGet('start_date') ?? date('Y-m-01');
         $end_date = $this->request->getGet('end_date') ?? date('Y-m-t');
-        
+
         $kegiatanQuery = $kegiatanModel
             ->where('student_id', $student['id'])
             ->where('activity_date >=', $start_date)
             ->where('activity_date <=', $end_date);
-            
+
         if ($filter_class_id) {
             $kegiatanQuery->where('class_id', $filter_class_id);
         }
-        
+
         $recorded_activities = $kegiatanQuery
             ->select('activities.*, activity_names.name as activity_name, activity_names.type')
             ->join('activity_names', 'activity_names.id = activities.activity_name_id')
             ->orderBy('activities.activity_date', 'DESC')
             ->findAll();
-        
+
         $processed_records = [];
         foreach ($recorded_activities as $rec) {
             $processed_records[$rec['activity_name_id']][$rec['activity_date']] = true;
         }
 
         $dateHeaders = [];
-        $period = new \DatePeriod( new \DateTime($start_date), new \DateInterval('P1D'), (new \DateTime($end_date))->modify('+1 day'));
+        $period = new \DatePeriod(new \DateTime($start_date), new \DateInterval('P1D'), (new \DateTime($end_date))->modify('+1 day'));
         foreach ($period as $value) {
             $dateHeaders[] = $value->format('Y-m-d');
         }
@@ -169,48 +181,84 @@ class WaliMuridController extends BaseController
 
         return view('pages/laporan/kegiatan_siswa', $data);
     }
-    
+
     public function saveActivity()
     {
         if (!$this->request->isAJAX()) {
-            return $this->response->setStatusCode(403);
+            return $this->response->setStatusCode(403, 'Forbidden');
         }
 
-        $student_id = $this->request->getPost('student_id');
-        $activity_name_id = $this->request->getPost('activity_name_id');
-        $date = $this->request->getPost('date');
-        $is_checked = $this->request->getPost('is_checked') === 'true';
+        try {
+            $student_id = $this->request->getPost('student_id');
+            $activity_name_id = $this->request->getPost('activity_name_id');
+            $date = $this->request->getPost('date');
+            $is_checked = $this->request->getPost('is_checked') === 'true';
 
-        $kegiatanModel = new KegiatanModel();
+            if (empty($student_id) || empty($activity_name_id) || empty($date)) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'Data tidak lengkap.']);
+            }
 
-        $existing = $kegiatanModel->where([
-            'student_id' => $student_id,
-            'activity_name_id' => $activity_name_id,
-            'activity_date' => $date
-        ])->first();
-        
-        if ($is_checked) {
-            if (!$existing) {
-                // Saat menyimpan kegiatan dari wali, kita perlu juga menyimpan konteks kelas dan T/A
-                $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
-                $enrollment = (new \App\Models\EnrollmentModel())->where(['student_id' => $student_id, 'academic_year_id' => $activeYear['id']])->first();
+            $kegiatanModel = new \App\Models\KegiatanModel();
 
-                if($enrollment){
-                    $kegiatanModel->insert([
-                        'student_id' => $student_id,
-                        'activity_name_id' => $activity_name_id,
-                        'activity_date' => $date,
-                        'class_id' => $enrollment['class_id'],
-                        'academic_year_id' => $enrollment['academic_year_id']
-                    ]);
+            if ($is_checked) {
+                $existing = $kegiatanModel->where(['student_id' => $student_id, 'activity_name_id' => $activity_name_id, 'activity_date' => $date])->first();
+
+                if ($existing) {
+                    return $this->response->setJSON(['status' => 'success']); // Data sudah ada
                 }
+
+                // !! LOGIKA BARU: Cari pendaftaran (enrollment) TERAKHIR siswa !!
+                $latestEnrollment = (new \App\Models\EnrollmentModel())
+                    ->join('academic_years', 'academic_years.id = enrollments.academic_year_id')
+                    ->where('student_id', $student_id)
+                    ->orderBy('academic_years.year', 'DESC')
+                    ->select('enrollments.class_id, enrollments.academic_year_id')
+                    ->first();
+
+                if (!$latestEnrollment) {
+                    return $this->response->setJSON(['status' => 'error', 'message' => 'Siswa belum pernah terdaftar di kelas manapun.']);
+                }
+
+                $dataToSave = [
+                    'student_id' => $student_id,
+                    'activity_name_id' => $activity_name_id,
+                    'activity_date' => $date,
+                    'class_id' => $latestEnrollment['class_id'],
+                    'academic_year_id' => $latestEnrollment['academic_year_id']
+                ];
+
+                if (!$kegiatanModel->insert($dataToSave)) {
+                    return $this->response->setJSON(['status' => 'error', 'message' => 'Gagal menyimpan ke database.']);
+                }
+
+            } else {
+                // Hapus data jika centang dihilangkan
+                $kegiatanModel->where([
+                    'student_id' => $student_id,
+                    'activity_name_id' => $activity_name_id,
+                    'activity_date' => $date
+                ])->delete();
             }
-        } else {
-            if ($existing) {
-                $kegiatanModel->delete($existing['id']);
-            }
+
+            return $this->response->setJSON(['status' => 'success']);
+
+        } catch (\Exception $e) {
+            log_message('error', '[saveActivity] ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON(['status' => 'error', 'message' => 'Terjadi kesalahan pada server.']);
+        }
+    }
+
+    public function laporanSiswa()
+    {
+        $student = (new SiswaModel())->where('user_id', session()->get('user_id'))->first();
+        if (!$student) {
+            return view('wali/no_student_linked');
         }
 
-        return $this->response->setJSON(['status' => 'success']);
+        // Panggil method dari LaporanController untuk menghindari duplikasi kode
+        // Pastikan LaporanController di-load di BaseController atau panggil FQCN
+        $laporanController = new \App\Controllers\Admin\LaporanController();
+        return $laporanController->laporanSiswa($student['id']);
     }
+
 }

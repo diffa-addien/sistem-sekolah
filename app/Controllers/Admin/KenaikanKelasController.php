@@ -51,63 +51,68 @@ class KenaikanKelasController extends BaseController
 
     public function process()
     {
-        $enrollmentModel = new EnrollmentModel();
+        $enrollmentModel = new \App\Models\EnrollmentModel();
+        $kelasModel = new \App\Models\KelasModel();
         $actions = $this->request->getPost('actions');
         $to_year_id = $this->request->getPost('to_year_id');
         $from_year_id = $this->request->getPost('from_year_id');
 
-
-        if (empty($actions) || empty($to_year_id)) {
-            return redirect()->back()->with('error', 'Tidak ada aksi yang dipilih atau tahun ajaran tujuan tidak valid.');
+        if (empty($actions) || empty($to_year_id) || empty($from_year_id)) {
+            return redirect()->back()->with('error', 'Data tidak lengkap.');
         }
 
         $db = \Config\Database::connect();
         $db->transStart(); // Mulai transaksi
 
         foreach ($actions as $student_id => $action) {
-            if (empty($action))
-                continue; // Lewati jika aksinya "-- Belum diatur --"
-
             $source_enrollment = $enrollmentModel
-                ->where('student_id', $student_id)
-                ->where('academic_year_id', $from_year_id)
+                ->join('classes', 'classes.id = enrollments.class_id')
+                ->where('enrollments.student_id', $student_id)
+                ->where('enrollments.academic_year_id', $from_year_id)
+                ->select('enrollments.*, classes.name as class_name')
                 ->first();
 
-            if ($action === 'lulus') {
-                if ($source_enrollment) {
-                    $enrollmentModel->update($source_enrollment['id'], ['status' => 'Lulus']);
-                }
-            } elseif (is_numeric($action)) {
-                $destination_class_id = $action;
-
-                // Logika "Upsert": update jika sudah ada, insert jika belum
-                $existingEnrollment = $enrollmentModel->where([
-                    'student_id' => $student_id,
-                    'academic_year_id' => $to_year_id
-                ])->first();
-
-                $data = [
-                    'student_id' => $student_id,
-                    'class_id' => $destination_class_id,
-                    'academic_year_id' => $to_year_id,
-                    'status' => 'Aktif'
-                ];
-
-                if ($existingEnrollment) {
-                    $enrollmentModel->update($existingEnrollment['id'], $data);
-                } else {
-                    $enrollmentModel->insert($data);
-                }
-
-                // Update status enrollment lama menjadi 'Naik Kelas' atau 'Tinggal Kelas'
-                if ($source_enrollment) {
-                    // Anda bisa menambahkan logika lebih kompleks di sini jika perlu
-                    // Untuk saat ini, kita biarkan status lama menjadi 'Aktif' saja sudah cukup sebagai riwayat
-                }
+            if (!$source_enrollment || empty($action)) {
+                continue;
             }
+
+            $new_status_for_old_enrollment = 'Tinggal Kelas'; // Default
+
+            if (is_numeric($action)) { // Aksi adalah ID kelas tujuan
+                $destination_class = $kelasModel->find($action);
+                if ($destination_class) {
+                    preg_match('/(\d+)/', $source_enrollment['class_name'], $source_matches);
+                    preg_match('/(\d+)/', $destination_class['name'], $dest_matches);
+                    $source_level = $source_matches[1] ?? 0;
+                    $dest_level = $dest_matches[1] ?? 0;
+
+                    $new_status_for_old_enrollment = ($dest_level > $source_level) ? 'Naik Kelas' : 'Tinggal Kelas';
+
+                    // Buat atau update pendaftaran di tahun ajaran tujuan
+                    $existingEnrollment = $enrollmentModel->where(['student_id' => $student_id, 'academic_year_id' => $to_year_id])->first();
+                    $data = [
+                        'student_id' => $student_id,
+                        'class_id' => $action,
+                        'academic_year_id' => $to_year_id,
+                        'status' => 'Aktif'
+                    ];
+                    if ($existingEnrollment) {
+                        $enrollmentModel->update($existingEnrollment['id'], $data);
+                    } else {
+                        $enrollmentModel->insert($data);
+                    }
+                }
+            } elseif ($action === 'lulus') {
+                $new_status_for_old_enrollment = 'Lulus';
+            } elseif ($action === 'keluar') {
+                $new_status_for_old_enrollment = 'Keluar';
+            }
+
+            // Update status pendaftaran lama
+            $enrollmentModel->update($source_enrollment['id'], ['status' => $new_status_for_old_enrollment]);
         }
 
-        $db->transComplete();
+        $db->transComplete(); // Selesaikan transaksi
 
         if ($db->transStatus() === false) {
             return redirect()->back()->with('error', 'Terjadi kesalahan saat memproses data.');
