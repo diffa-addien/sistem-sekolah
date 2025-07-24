@@ -8,7 +8,7 @@ class KehadiranModel extends Model
 {
     protected $table = 'attendances';
     protected $primaryKey = 'id';
-    protected $allowedFields = ['student_id', 'class_id', 'academic_year_id', 'attendance_date', 'status', 'description', 'check_in_time', 'check_out_time'];
+    protected $allowedFields = ['student_id', 'attendance_date', 'status', 'description', 'check_in_time', 'check_out_time'];
     protected $useTimestamps = true;
 
     // app/Models/KehadiranModel.php

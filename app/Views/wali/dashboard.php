@@ -89,41 +89,5 @@ Dashboard Wali Murid
 
 </a>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-  <a href="<?= site_url('wali/laporan-kehadiran') ?>"
-    class="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
-    <div class="flex items-center">
-      <div class="p-3 bg-blue-100 rounded-full">
-        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-          </path>
-        </svg>
-      </div>
-      <div class="ml-4">
-        <p class="text-lg font-semibold text-gray-700">Lihat Laporan Kehadiran</p>
-        <p class="text-sm text-gray-500">Lihat rekap semua Kehadiran anak</p>
-      </div>
-    </div>
-  </a>
-
-    <a href="<?= site_url('wali/laporan-kegiatan') ?>"
-    class="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
-    <div class="flex items-center">
-      <div class="p-3 bg-blue-100 rounded-full">
-        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-          </path>
-        </svg>
-      </div>
-      <div class="ml-4">
-        <p class="text-lg font-semibold text-gray-700">Lihat Laporan Kegiatan</p>
-        <p class="text-sm text-gray-500">Lihat rekap semua kegiatan anak</p>
-      </div>
-    </div>
-  </a>
-</div>
 </div>
 <?= $this->endSection() ?>

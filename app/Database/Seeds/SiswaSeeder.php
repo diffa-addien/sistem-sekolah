@@ -8,14 +8,12 @@ class SiswaSeeder extends Seeder
 {
     public function run()
     {
-        // Ambil 10 wali murid
         $parents = $this->db->table('users')->where('role', 'Wali Murid')->limit(10)->get()->getResultArray();
-        
-        // Ambil 6 kelas
-        $classes = $this->db->table('classes')->limit(6)->get()->getResultArray();
+        $activeYear = $this->db->table('academic_years')->where('status', 'Aktif')->get()->getRowArray();
+        $classes = $this->db->table('classes')->where('academic_year_id', $activeYear['id'])->get()->getResultArray();
 
-        if (count($parents) < 10 || count($classes) < 6) {
-             echo "Pastikan ada minimal 10 wali murid dan 6 kelas.\n";
+        if (count($parents) < 10 || empty($classes)) {
+             echo "Pastikan ada minimal 10 wali murid dan ada kelas di tahun ajaran aktif.\n";
             return;
         }
 
@@ -25,13 +23,23 @@ class SiswaSeeder extends Seeder
                 'full_name'  => 'Siswa ' . $i,
                 'nis'        => '100' . $i,
                 'gender'     => ($i % 2 == 0) ? 'Perempuan' : 'Laki-laki',
-                'birth_date' => date('Y-m-d', strtotime("-".(7+$i)." years")), // Umur antara 8-17
-                'class_id'   => $classes[($i - 1) % count($classes)]['id'], // Distribusikan siswa ke kelas
-                'user_id'    => $parents[$i-1]['id'], // Tautkan siswa ke-i ke wali ke-i
-                'status'     => 'Aktif',
+                'birth_date' => date('Y-m-d', strtotime("-".(7+$i)." years")),
+                'user_id'    => $parents[$i-1]['id'],
             ];
         }
-
         $this->db->table('students')->insertBatch($students);
+
+        // Setelah siswa dibuat, buat data pendaftaran (enrollment) mereka
+        $newly_created_students = $this->db->table('students')->orderBy('id', 'DESC')->limit(10)->get()->getResultArray();
+        $enrollments = [];
+        foreach($newly_created_students as $key => $student) {
+            $enrollments[] = [
+                'student_id'       => $student['id'],
+                'class_id'         => $classes[$key % count($classes)]['id'], // Distribusikan siswa ke kelas
+                'academic_year_id' => $activeYear['id'],
+                'status'           => 'Aktif',
+            ];
+        }
+        $this->db->table('enrollments')->insertBatch($enrollments);
     }
 }

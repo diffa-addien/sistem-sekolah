@@ -1,79 +1,84 @@
 <?= $this->extend('layouts/template') ?>
-
-<?= $this->section('title') ?>
-Manajemen Tahun Ajaran
-<?= $this->endSection() ?>
+<?= $this->section('title') ?>Manajemen Tahun Ajaran<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <div class="flex justify-between items-center mb-4">
   <h2 class="text-2xl font-semibold text-gray-700">Manajemen Tahun Ajaran</h2>
   <a href="<?= site_url('admin/tahun-ajaran/new') ?>"
-    class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
-    Tambah Tahun Ajaran
+    class="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700">
+    Tambah T.A. Baru
   </a>
 </div>
 
-<div class="w-full overflow-hidden rounded-lg shadow-xs">
+<div class="mb-6 p-4 bg-white rounded-2xl border border-gray-300 shadow-sm">
+  <form action="<?= site_url('admin/tahun-ajaran') ?>" method="get">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+      <div>
+        <label for="status" class="block text-sm font-medium text-gray-700">Filter Status</label>
+        <select name="status" id="status" class="px-4 py-2 ring-1 block w-full mt-1 text-sm rounded-lg border-gray-300">
+          <option value="">Semua Status</option>
+          <option value="Aktif" <?= ($selected_status == 'Aktif') ? 'selected' : '' ?>>Aktif</option>
+          <option value="Tidak Aktif" <?= ($selected_status == 'Tidak Aktif') ? 'selected' : '' ?>>Tidak Aktif</option>
+        </select>
+      </div>
+      <div>
+        <label for="search" class="block text-sm font-medium text-gray-700">Cari Tahun Ajaran</label>
+        <div class="flex space-x-2 mt-1">
+          <input type="text" name="search" id="search" placeholder="Contoh: 2025/2026"
+            value="<?= esc($search_keyword ?? '') ?>" class="block ring-1 w-full px-4 text-sm rounded-lg border-gray-300">
+          <button type="submit"
+            class="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700">Cari</button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="w-full overflow-hidden rounded-2xl border border-gray-300">
   <div class="w-full overflow-x-auto">
-    <table id="myTable" class="w-full whitespace-no-wrap">
+    <table class="w-full whitespace-no-wrap">
       <thead>
         <tr class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b bg-gray-50">
-          <th class="px-4 py-3">No</th>
           <th class="px-4 py-3">Tahun Ajaran</th>
+          <th class="px-4 py-3">Tanggal Mulai</th>
+          <th class="px-4 py-3">Tanggal Selesai</th>
           <th class="px-4 py-3">Status</th>
           <th class="px-4 py-3">Aksi</th>
         </tr>
       </thead>
       <tbody class="bg-white divide-y">
-        <?php foreach ($academicYears as $key => $item): ?>
+        <?php foreach ($academicYears as $item): ?>
           <tr class="text-gray-700">
-            <td class="px-4 py-3 text-sm">
-              <?= $key + 1 ?>
-            </td>
-            <td class="px-4 py-3 text-sm">
-              <?= esc($item['year']) ?>
-            </td>
+            <td class="px-4 py-3 text-sm font-semibold"><?= esc($item['year']) ?></td>
+            <td class="px-4 py-3 text-sm"><?= date('d M Y', strtotime($item['start_date'])) ?></td>
+            <td class="px-4 py-3 text-sm"><?= date('d M Y', strtotime($item['end_date'])) ?></td>
             <td class="px-4 py-3 text-xs">
               <?php if ($item['status'] == 'Aktif'): ?>
-                <span class="px-2 py-1 font-semibold leading-tight text-green-700 bg-green-100 rounded-full">
-                  Aktif
-                </span>
+                <span class="px-2 py-1 font-semibold leading-tight text-green-700 bg-green-100 rounded-full">Aktif</span>
               <?php else: ?>
-                <span class="px-2 py-1 font-semibold leading-tight text-red-700 bg-red-100 rounded-full">
-                  Tidak Aktif
-                </span>
+                <span class="px-2 py-1 font-semibold leading-tight text-gray-700 bg-gray-100 rounded-full">Tidak
+                  Aktif</span>
               <?php endif; ?>
             </td>
             <td class="px-4 py-3 text-sm">
-              <div class="flex items-center space-x-3">
-                <a href="<?= site_url('admin/tahun-ajaran/' . $item['id'] . '/edit') ?>"
-                  class="group relative p-2 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-full transition-all duration-200 ease-in-out focus:ring-2 focus:ring-blue-300 focus:outline-none"
-                  aria-label="Edit" title="Edit Data">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  <span
-                    class="absolute hidden group-hover:block -top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2">
-                    Edit
-                  </span>
-                </a>
-
+              <div class="flex items-center space-x-4">
+                <a href="<?= site_url('admin/tahun-ajaran/' . $item['id'] . '/edit') ?>" aria-label="Edit"
+                  class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 text-purple-600 rounded-lg"><svg
+                    class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z">
+                    </path>
+                  </svg></a>
                 <form action="<?= site_url('admin/tahun-ajaran/' . $item['id']) ?>" method="post" class="inline"
-                  onsubmit="return confirm('Yakin hapus data ini?');">
-                  <?= csrf_field() ?>
-                  <input type="hidden" name="_method" value="DELETE">
+                  onsubmit="return confirm('Apakah Anda yakin?');">
+                  <?= csrf_field() ?><input type="hidden" name="_method" value="DELETE">
                   <button type="submit"
-                    class="group relative p-2 text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded-full transition-all duration-200 ease-in-out focus:ring-2 focus:ring-red-300 focus:outline-none"
-                    aria-label="Delete" title="Hapus Data">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    <span class="absolute hidden group-hover:block -top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2">
-                      Hapus
-                    </span>
-                  </button>
+                    class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 text-purple-600 rounded-lg"
+                    aria-label="Delete"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd"
+                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z"
+                        clip-rule="evenodd"></path>
+                    </svg></button>
                 </form>
               </div>
             </td>
@@ -82,13 +87,6 @@ Manajemen Tahun Ajaran
       </tbody>
     </table>
   </div>
+  <div class="p-4"><?= $pager->links('academic_years', 'tailwind') ?></div>
 </div>
-<?= $this->endSection() ?>
-
-<?= $this->section('scripts') ?>
-<script>
-  $(document).ready(function () {
-    $('#myTable').DataTable();
-  });
-</script>
 <?= $this->endSection() ?>

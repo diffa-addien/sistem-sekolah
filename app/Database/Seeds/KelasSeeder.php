@@ -8,10 +8,7 @@ class KelasSeeder extends Seeder
 {
     public function run()
     {
-        // Ambil ID tahun ajaran aktif
         $activeYear = $this->db->table('academic_years')->where('status', 'Aktif')->get()->getRowArray();
-        
-        // Ambil 6 guru yang sudah dibuat
         $teachers = $this->db->table('users')->where('role', 'Guru')->limit(6)->get()->getResultArray();
 
         if (!$activeYear || count($teachers) < 6) {
@@ -24,7 +21,7 @@ class KelasSeeder extends Seeder
             $classes[] = [
                 'name'              => 'Kelas ' . $i . 'A',
                 'academic_year_id'  => $activeYear['id'],
-                'teacher_id'        => $teachers[$i-1]['id'], // Assign guru ke-i ke kelas ke-i
+                'teacher_id'        => $teachers[$i-1]['id'],
             ];
         }
 

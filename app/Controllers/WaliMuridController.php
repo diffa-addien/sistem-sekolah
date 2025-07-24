@@ -248,17 +248,22 @@ class WaliMuridController extends BaseController
         }
     }
 
+    // app/Controllers/WaliMuridController.php
     public function laporanSiswa()
     {
-        $student = (new SiswaModel())->where('user_id', session()->get('user_id'))->first();
+        $student = (new \App\Models\SiswaModel())->where('user_id', session()->get('user_id'))->first();
         if (!$student) {
             return view('wali/no_student_linked');
         }
 
-        // Panggil method dari LaporanController untuk menghindari duplikasi kode
-        // Pastikan LaporanController di-load di BaseController atau panggil FQCN
+        // Panggil method dari LaporanController, TAPI inisialisasi dulu controllernya
         $laporanController = new \App\Controllers\Admin\LaporanController();
+        $laporanController->initController(
+            \Config\Services::request(),
+            \Config\Services::response(),
+            \Config\Services::logger()
+        );
+
         return $laporanController->laporanSiswa($student['id']);
     }
-
 }

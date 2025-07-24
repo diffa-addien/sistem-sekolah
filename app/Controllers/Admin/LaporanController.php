@@ -16,10 +16,10 @@ class LaporanController extends BaseController
 {
     public function kehadiran()
     {
-        $kelasModel = new KelasModel();
-        $kehadiranModel = new KehadiranModel();
-        $enrollmentModel = new EnrollmentModel();
-        $activeYear = (new TahunAjaranModel())->where('status', 'Aktif')->first();
+        $kelasModel = new \App\Models\KelasModel();
+        $kehadiranModel = new \App\Models\KehadiranModel();
+        $enrollmentModel = new \App\Models\EnrollmentModel();
+        $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
 
         $class_id = $this->request->getGet('class_id');
         $month = $this->request->getGet('month') ?? date('m');
@@ -47,7 +47,7 @@ class LaporanController extends BaseController
                 $pivotedData = [];
                 foreach ($students_in_class as $student) {
                     $pivotedData[$student['nis']]['full_name'] = $student['full_name'];
-                    $pivotedData[$student['nis']]['student_id'] = $student['id']; // !! BARIS PENTING !!
+                    $pivotedData[$student['nis']]['student_id'] = $student['id'];
                     $pivotedData[$student['nis']]['attendances'] = [];
                 }
                 foreach ($raw_data as $row) {
@@ -164,12 +164,14 @@ class LaporanController extends BaseController
         return view('pages/laporan/kegiatan_siswa', $data);
     }
 
-    public function laporanSiswa($student_id)
+    public function laporanSiswa($student_id, $filter_params = [])
     {
-        $siswaModel = new SiswaModel();
-        $enrollmentModel = new EnrollmentModel();
-        $kehadiranModel = new KehadiranModel();
-        $kegiatanModel = new KegiatanModel();
+        $siswaModel = new \App\Models\SiswaModel();
+        $enrollmentModel = new \App\Models\EnrollmentModel();
+        $kehadiranModel = new \App\Models\KehadiranModel();
+        $kegiatanModel = new \App\Models\KegiatanModel();
+        $activityNameModel = new \App\Models\ActivityNameModel();
+        $tahunAjaranModel = new \App\Models\TahunAjaranModel();
 
         $student = $siswaModel->find($student_id);
         if (!$student) {
@@ -177,19 +179,19 @@ class LaporanController extends BaseController
         }
 
         $enrollment_history = $enrollmentModel
-            ->select('enrollments.id, enrollments.academic_year_id, classes.name as class_name, academic_years.year as academic_year')
+            // !! PERBAIKAN: Tambahkan enrollments.class_id di sini !!
+            ->select('enrollments.id, enrollments.academic_year_id, enrollments.class_id, classes.name as class_name, academic_years.year as academic_year')
             ->join('classes', 'classes.id = enrollments.class_id')
             ->join('academic_years', 'academic_years.id = enrollments.academic_year_id')
             ->where('enrollments.student_id', $student_id)
             ->orderBy('academic_years.year', 'DESC')
             ->findAll();
 
-        // Jika sama sekali tidak punya riwayat, kembalikan dengan pesan error
         if (empty($enrollment_history)) {
             return redirect()->to('admin/siswa')->with('error', 'Siswa "' . esc($student['full_name']) . '" belum memiliki riwayat pendaftaran kelas.');
         }
 
-        $selected_enrollment_id = $this->request->getGet('enrollment_id') ?? ($enrollment_history[0]['id'] ?? null);
+        $selected_enrollment_id = $filter_params['enrollment_id'] ?? $this->request->getGet('enrollment_id') ?? ($enrollment_history[0]['id'] ?? null);
 
         $data = [
             'student' => $student,
@@ -197,13 +199,7 @@ class LaporanController extends BaseController
             'selected_enrollment_id' => $selected_enrollment_id,
             'attendances' => [],
             'activities_by_day' => [],
-            'summary' => [ // Variabel baru untuk ringkasan
-                'hadir' => 0,
-                'sakit' => 0,
-                'izin' => 0,
-                'kegiatan' => 0,
-                'hadir_tertinggi' => 0
-            ]
+            'summary' => ['hadir' => 0, 'sakit' => 0, 'izin' => 0, 'kegiatan' => 0, 'hari_aktif_tertinggi' => 0]
         ];
 
         if ($selected_enrollment_id) {
@@ -216,53 +212,50 @@ class LaporanController extends BaseController
             }
 
             if ($selected_enrollment) {
-                $academic_year_id = $selected_enrollment['academic_year_id'];
+                $academicYearData = $tahunAjaranModel->find($selected_enrollment['academic_year_id']);
 
-                $attendances = $kehadiranModel
-                    ->where('student_id', $student_id)
-                    ->where('academic_year_id', $academic_year_id)
-                    ->findAll();
-                $data['attendances'] = $attendances;
+                if ($academicYearData && !empty($academicYearData['start_date']) && !empty($academicYearData['end_date'])) {
+                    $start_date = $academicYearData['start_date'];
+                    $end_date = $academicYearData['end_date'];
 
-                $activities = $kegiatanModel
-                    ->where('student_id', $student_id)
-                    ->where('academic_year_id', $academic_year_id)
-                    ->findAll();
+                    $attendances = $kehadiranModel
+                        ->where('student_id', $student_id)
+                        ->where('attendance_date >=', $start_date)
+                        ->where('attendance_date <=', $end_date)
+                        ->orderBy('attendance_date', 'DESC')
+                        ->findAll();
+                    $data['attendances'] = $attendances;
 
-                // 1. Hitung statistik kehadiran siswa ini
-                $attendanceCounts = array_count_values(array_column($attendances, 'status'));
-                $data['summary']['hadir'] = $attendanceCounts['Hadir'] ?? 0;
-                $data['summary']['sakit'] = $attendanceCounts['Sakit'] ?? 0;
-                $data['summary']['izin'] = $attendanceCounts['Izin'] ?? 0;
+                    $raw_activities = $kegiatanModel
+                        ->select('activities.*, activity_names.name as activity_name')
+                        ->join('activity_names', 'activity_names.id = activities.activity_name_id')
+                        ->where('student_id', $student_id)
+                        ->where('activity_date >=', $start_date)
+                        ->where('activity_date <=', $end_date)
+                        ->orderBy('activity_date', 'DESC')
+                        ->findAll();
 
-                // 2. Hitung total kegiatan
-                $data['summary']['kegiatan'] = count($activities);
+                    $attendanceCounts = array_count_values(array_column($attendances, 'status'));
+                    $data['summary']['hadir'] = $attendanceCounts['Hadir'] ?? 0;
+                    $data['summary']['sakit'] = $attendanceCounts['Sakit'] ?? 0;
+                    $data['summary']['izin'] = $attendanceCounts['Izin'] ?? 0;
+                    $data['summary']['kegiatan'] = count($raw_activities);
 
-                // 3. Hitung kehadiran tertinggi di angkatan (enrollment) yang sama
-                $highestAttendance = $kehadiranModel
-                    ->select('COUNT(id) as total_days')
-                    ->where('academic_year_id', $academic_year_id)
-                    ->groupBy('student_id')
-                    ->orderBy('total_days', 'DESC')
-                    ->limit(1)
-                    ->first();
-                $data['summary']['hari_aktif_tertinggi'] = $highestAttendance ? $highestAttendance['total_days'] : 0;
+                    $students_in_same_class = $enrollmentModel->where('class_id', $selected_enrollment['class_id'])->findAll();
+                    if (!empty($students_in_same_class)) {
+                        $student_ids_in_class = array_column($students_in_same_class, 'student_id');
+                        $highestAttendance = $kehadiranModel->select('COUNT(id) as total_days')->whereIn('student_id', $student_ids_in_class)->where('attendance_date >=', $start_date)->where('attendance_date <=', $end_date)->groupBy('student_id')->orderBy('total_days', 'DESC')->limit(1)->first();
+                        $data['summary']['hari_aktif_tertinggi'] = $highestAttendance ? $highestAttendance['total_days'] : 0;
+                    }
 
-                $raw_activities = $kegiatanModel
-                    ->select('activities.*, activity_names.name as activity_name')
-                    ->join('activity_names', 'activity_names.id = activities.activity_name_id')
-                    ->where('student_id', $student_id)
-                    ->where('academic_year_id', $selected_enrollment['academic_year_id'])
-                    ->orderBy('activity_date', 'DESC')
-                    ->findAll();
-                $grouped_activities = [];
-                foreach ($raw_activities as $act) {
-                    $grouped_activities[$act['activity_date']][] = $act;
+                    $grouped_activities = [];
+                    foreach ($raw_activities as $act) {
+                        $grouped_activities[$act['activity_date']][] = $act;
+                    }
+                    $data['activities_by_day'] = $grouped_activities;
                 }
-                $data['activities_by_day'] = $grouped_activities;
             }
         }
-
         return view('pages/laporan/detail_siswa', $data);
     }
 }

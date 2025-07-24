@@ -23,7 +23,7 @@ class TahunAjaranModel extends Model
 
     // Kolom yang diizinkan untuk diisi melalui form (mass assignment)
     // Ini PENTING untuk keamanan!
-    protected $allowedFields    = ['year', 'status'];
+    protected $allowedFields    = ['year', 'status', 'start_date', 'end_date'];
 
     // Menggunakan fitur timestamps bawaan CodeIgniter
     protected $useTimestamps = true;

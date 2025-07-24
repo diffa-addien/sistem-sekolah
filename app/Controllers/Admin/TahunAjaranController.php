@@ -9,13 +9,30 @@ class TahunAjaranController extends BaseController
 {
     public function index()
     {
-        // Buat instance dari model
-        $model = new TahunAjaranModel();
+        $model = new \App\Models\TahunAjaranModel();
 
-        // Ambil semua data dari model dan kirim ke view
+        // Ambil filter dan pencarian dari URL
+        $status = $this->request->getGet('status');
+        $search = $this->request->getGet('search');
+
+        // Siapkan query dasar
+        $query = $model;
+
+        // Terapkan filter status jika ada
+        if ($status && in_array($status, ['Aktif', 'Tidak Aktif'])) {
+            $query->where('status', $status);
+        }
+
+        // Terapkan pencarian jika ada
+        if ($search) {
+            $query->like('year', $search);
+        }
+
         $data = [
-            // 'findAll()' adalah method dari CI Model untuk mengambil semua baris data
-            'academicYears' => $model->orderBy('year', 'DESC')->findAll(),
+            'academicYears' => $query->orderBy('year', 'DESC')->paginate(10, 'academic_years'),
+            'pager' => $model->pager,
+            'selected_status' => $status,
+            'search_keyword' => $search
         ];
 
         return view('pages/tahun_ajaran/index', $data);
@@ -45,74 +62,65 @@ class TahunAjaranController extends BaseController
         return view('pages/tahun_ajaran/form', $data);
     }
 
-    // Method lain kita biarkan dulu
     public function create()
     {
         $rules = [
             'year' => 'required|is_unique[academic_years.year]',
-            'status' => 'required|in_list[Aktif,Tidak Aktif]'
+            'status' => 'required|in_list[Aktif,Tidak Aktif]',
+            'start_date' => 'required|valid_date',
+            'end_date' => 'required|valid_date|gte_date[start_date]|is_date_range_conflict[0]',
+        ];
+        $messages = [
+            'end_date' => [
+                'gte_date' => 'Tanggal Selesai harus setelah atau sama dengan Tanggal Mulai.',
+                'is_date_range_conflict' => 'Rentang tanggal ini bertabrakan dengan tahun ajaran lain yang sudah ada.'
+            ]
         ];
 
-        // 2. Lakukan Validasi
-        if (!$this->validate($rules)) {
-            // Jika validasi gagal, kembali ke form dengan error dan input lama
+        if (!$this->validate($rules, $messages)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        // 3. Jika validasi berhasil, simpan data
         $model = new TahunAjaranModel();
         $status = $this->request->getPost('status');
-        $year = $this->request->getPost('year');
-
         if ($status === 'Aktif') {
-            // Method update() tanpa 'where' akan meng-update semua baris.
-            $model->set(['status' => 'Tidak Aktif'])->where('status', 'Aktif')->update();
+            $model->set(['status' => 'Tidak Aktif'])->update();
         }
 
-        // 4. Simpan data baru
-        $model->save([
-            'year'   => $year,
-            'status' => $status,
-        ]);
-
-        // 4. Redirect ke halaman index dengan pesan sukses
+        $model->save($this->request->getPost());
         return redirect()->to('admin/tahun-ajaran')->with('success', 'Data Tahun Ajaran berhasil ditambahkan!');
     }
+
     public function update($id = null)
     {
         $model = new TahunAjaranModel();
-        $oldData = $model->find($id);
-
-        // Aturan validasi
-        // Jika tahun ajaran tidak diubah, aturan 'is_unique' tidak berlaku padanya
-        $yearRule = ($this->request->getPost('year') == $oldData['year']) ? 'required' : 'required|is_unique[academic_years.year]';
 
         $rules = [
-            'year' => $yearRule,
-            'status' => 'required|in_list[Aktif,Tidak Aktif]'
+            'year' => "required|is_unique[academic_years.year,id,{$id}]",
+            'status' => 'required|in_list[Aktif,Tidak Aktif]',
+            'start_date' => 'required|valid_date',
+            'end_date' => "required|valid_date|gte_date[start_date]|is_date_range_conflict[{$id}]",
+        ];
+        $messages = [
+            'end_date' => [
+                'gte_date' => 'Tanggal Selesai harus setelah atau sama dengan Tanggal Mulai.',
+                'is_date_range_conflict' => 'Rentang tanggal ini bertabrakan dengan tahun ajaran lain yang sudah ada.'
+            ]
         ];
 
-        if (!$this->validate($rules)) {
+        if (!$this->validate($rules, $messages)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
         $status = $this->request->getPost('status');
-        $year = $this->request->getPost('year');
-
-        // Logika "hanya satu yang aktif"
         if ($status === 'Aktif') {
-            // Nonaktifkan semua, KECUALI baris yang sedang kita edit
-            $model->where('id !=', $id)->where('status', 'Aktif')->set(['status' => 'Tidak Aktif'])->update();
+            $model->where('id !=', $id)->set(['status' => 'Tidak Aktif'])->update();
         }
 
-        // Simpan perubahan
-        $model->update($id, [
-            'year'   => $year,
-            'status' => $status,
-        ]);
-
+        $model->update($id, $this->request->getPost());
         return redirect()->to('admin/tahun-ajaran')->with('success', 'Data Tahun Ajaran berhasil diperbarui!');
     }
+
     public function delete($id = null)
     {
         $model = new TahunAjaranModel();

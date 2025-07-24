@@ -1,113 +1,89 @@
 <?= $this->extend('layouts/template') ?>
-
-<?= $this->section('title') ?>
-Manajemen Siswa
-<?= $this->endSection() ?>
+<?= $this->section('title') ?>Manajemen Siswa<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <div class="flex justify-between items-center mb-4">
     <h2 class="text-2xl font-semibold text-gray-700">Manajemen Siswa</h2>
     <a href="<?= site_url('admin/siswa/new') ?>"
-        class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
-        Tambah Siswa
-    </a>
+        class="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700">Tambah Siswa</a>
 </div>
 
-<div class="mb-4 p-4 bg-white rounded-lg shadow-xs">
+<div class="mb-6 p-4 bg-white rounded-2xl border border-gray-300 shadow-sm">
     <form action="<?= site_url('admin/siswa') ?>" method="get">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div class="md:col-span-1">
+            <div>
                 <label for="status" class="block text-sm font-medium text-gray-700">Filter Status</label>
-                <select name="status" id="status"
-                    class="block w-full mt-1 text-sm rounded-lg border-gray-300 bg-gray-50 focus:border-purple-400 focus:ring focus:ring-purple-300">
-
+                <select name="status" id="status" class="block w-full mt-1 text-sm rounded-lg border-gray-300">
+                    <option value="">Semua Siswa</option>
                     <option value="aktif" <?= ($selected_status == 'aktif') ? 'selected' : '' ?>>Aktif di T/A Sekarang
                     </option>
-                    <!-- <option value="riwayat" <?= ($selected_status == 'riwayat') ? 'selected' : '' ?>>Memiliki Riwayat
-                        (Lulus, Naik, dll)</option> -->
+                    <option value="riwayat" <?= ($selected_status == 'riwayat') ? 'selected' : '' ?>>Memiliki Riwayat
+                    </option>
                     <option value="belum_terdaftar" <?= ($selected_status == 'belum_terdaftar') ? 'selected' : '' ?>>Belum
                         Terdaftar di T/A Aktif</option>
-                    <option value="">Semua Siswa (Pernah Terdaftar)</option>
                 </select>
             </div>
-
             <div class="md:col-span-2">
                 <label for="search" class="block text-sm font-medium text-gray-700">Cari Siswa</label>
                 <div class="flex space-x-2 mt-1">
-                    <input type="text" name="search" id="search" placeholder="Masukkan Nama atau NIS..."
+                    <input type="text" name="search" placeholder="Masukkan Nama atau NIS..."
                         value="<?= esc($search_keyword ?? '') ?>"
-                        class="block w-full text-sm rounded-lg border-gray-300 bg-gray-50 focus:border-purple-400 focus:ring focus:ring-purple-300">
+                        class="block w-full text-sm rounded-lg border-gray-300">
                     <button type="submit"
-                        class="px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700">Cari</button>
+                        class="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700">Cari</button>
                 </div>
             </div>
         </div>
     </form>
 </div>
 
-<div class="w-full overflow-hidden rounded-lg shadow-xs">
+<div class="w-full overflow-hidden rounded-2xl border border-gray-300">
     <div class="w-full overflow-x-auto">
         <table class="w-full whitespace-no-wrap">
             <thead>
                 <tr class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b bg-gray-50">
-                    <th class="px-4 py-3">No</th>
-                    <th class="px-4 py-3">Foto</th>
-                    <th class="px-4 py-3">NIS</th>
                     <th class="px-4 py-3">Nama Siswa</th>
                     <th class="px-4 py-3">Kelas Saat Ini</th>
                     <th class="px-4 py-3 text-center">RFID</th>
                     <th class="px-4 py-3">Wali Murid</th>
-                    <th class="px-4 py-3 sticky right-0 bg-gray-50 z-10">Aksi</th>
+                    <th class="px-4 py-3">Aksi</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y">
-                <?php foreach ($students as $key => $student): ?>
-                    <tr class="text-gray-700">
-                        <td class="px-4 py-3 text-sm">
-                            <?= $pager->getDetails('students')['currentPage'] > 1 ? ($pager->getDetails('students')['perPage'] * ($pager->getDetails('students')['currentPage'] - 1)) + $key + 1 : $key + 1 ?>
-                        </td>
+                <?php foreach ($students as $student): ?>
+                    <tr>
                         <td class="px-4 py-3">
-                            <div class="relative w-12 h-12">
-                                <img class="object-cover w-full h-full rounded-full shadow-md"
-                                    src="<?= base_url('uploads/photos/' . ($student['photo'] ?? 'default.png')) ?>"
-                                    alt="Foto Profil" loading="lazy"
-                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <div
-                                    class="hidden absolute inset-0 flex items-center justify-center rounded-full bg-sky-900 text-white text-sm font-semibold">
-                                    <?= esc(strtoupper(substr($student['full_name'], 0, 1))) ?>
+                            <div class="flex items-center text-sm">
+                                <div class="relative w-12 h-12 me-2">
+                                    <img class="object-cover w-full h-full rounded-full shadow-md"
+                                        src="<?= base_url('uploads/photos/' . ($student['photo'] ?? 'default.png')) ?>"
+                                        alt="Foto Profil" loading="lazy"
+                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div
+                                        class="hidden absolute inset-0 flex items-center justify-center rounded-full bg-sky-900 text-white text-sm font-semibold">
+                                        <?= esc(strtoupper(substr($student['full_name'], 0, 1))) ?>
+                                    </div>
+                                </div>
+                                <div>
+                                    <?php if ($student['total_enrollments'] > 0): ?>
+                                        <a href="<?= site_url('admin/laporan/siswa/' . $student['id']) ?>"
+                                            class="font-semibold text-sky-600 hover:underline"><?= esc($student['full_name']) ?></a>
+                                    <?php else: ?>
+                                        <p class="font-semibold"><?= esc($student['full_name']) ?></p>
+                                    <?php endif; ?>
+                                    <p class="text-xs text-gray-600">NIS: <?= esc($student['nis']) ?></p>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-4 py-3 text-sm"><?= esc($student['nis']) ?></td>
-                        <td class="px-4 py-3 text-sm font-bold">
-                            <?php if ($student['total_enrollments'] > 0): ?>
-                                <a href="<?= site_url('admin/laporan/siswa/' . $student['id']) ?>" class="hover:underline text-purple-600">
-                                    <?= esc($student['full_name']) ?>
-                                </a>
-                            <?php else: ?>
-                                <span><?= esc($student['full_name']) ?></span>
-                            <?php endif; ?>
-                        </td>
                         <td class="px-4 py-3 text-sm">
-                            <b><?= esc($student['class_name'] ?? 'N/A') ?></b>
+                            <p class="font-semibold"><?= esc($student['class_name'] ?? 'N/A') ?></p>
                             <p class="text-xs text-gray-500"><?= esc($student['tahun_kelas'] ?? 'Belum Terdaftar') ?></p>
                         </td>
                         <td class="px-4 py-3 text-center">
-                            <?php if (!empty($student['card_uid'])): ?>
-                                <span class="inline-flex items-center p-1 text-white bg-green-500 rounded-full">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </span>
-                            <?php else: ?>
-                                <span class="inline-flex items-center p-1 text-white bg-red-400 rounded-full">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </span>
-                            <?php endif; ?>
+                            <?php if (!empty($student['card_uid'])): ?><span
+                                    class="px-2 py-1 text-xs font-semibold leading-tight text-green-700 bg-green-100 rounded-full">Terdaftar</span><?php endif; ?>
                         </td>
-                        <td class="px-4 py-3 text-sm"><?= esc($student['parent_name'] ?? 'Belum Ditautkan') ?></td>
+                        <td class="px-4 py-3 text-sm"><?= esc($student['parent_name'] ?? '-') ?></td>
                         <td class="px-4 py-3 text-sm sticky right-0 bg-white z-10">
                             <div class="flex items-center space-x-2">
                                 <a href="<?= site_url('admin/siswa/' . $student['id'] . '/edit') ?>"
@@ -140,16 +116,6 @@ Manajemen Siswa
             </tbody>
         </table>
     </div>
-
-    <div class="mt-4">
-        <?= $pager->links('students', 'tailwind') ?>
-    </div>
-
+    <div class="p-4"><?= $pager->links('students', 'tailwind') ?></div>
 </div>
-<?= $this->endSection() ?>
-
-<?= $this->section('scripts') ?>
-<script>
-    // DataTables dinonaktifkan untuk menggunakan paginasi dari server
-</script>
 <?= $this->endSection() ?>

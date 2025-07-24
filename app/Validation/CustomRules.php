@@ -3,6 +3,7 @@
 namespace App\Validation;
 
 use App\Models\ActivityNameModel;
+use App\Models\TahunAjaranModel;
 
 class CustomRules
 {
@@ -13,7 +14,7 @@ class CustomRules
     public function is_schedule_conflict(string $str, string $fields, array $data): bool
     {
         $model = new ActivityNameModel();
-        
+
         // Ambil start_time dan end_time dari data yang disubmit
         $startTime = $data['start_time'];
         $endTime = $data['end_time'];
@@ -27,11 +28,11 @@ class CustomRules
         list($idToIgnore) = explode(',', $fields);
 
         $query = $model->where('id !=', $idToIgnore)
-                       ->groupStart()
-                           ->where('start_time <', $endTime)
-                           ->where('end_time >', $startTime)
-                       ->groupEnd();
-        
+            ->groupStart()
+            ->where('start_time <', $endTime)
+            ->where('end_time >', $startTime)
+            ->groupEnd();
+
         $conflict = $query->first();
 
         return $conflict === null;
@@ -56,14 +57,51 @@ class CustomRules
         }
 
         $model = new \App\Models\KegiatanModel();
-        
+
         $existing = $model->where([
-            'student_id'       => $student_id,
+            'student_id' => $student_id,
             'activity_name_id' => $activity_name_id,
-            'activity_date'    => $activity_date,
+            'activity_date' => $activity_date,
         ])->first();
 
         // Validasi gagal jika data sudah ada
         return $existing === null;
+    }
+
+    public function gte_date(string $str, string $field, array $data): bool
+    {
+        // $str adalah nilai dari kolom saat ini (end_date)
+        // $field adalah nama kolom pembanding (start_date)
+        if (!isset($data[$field])) {
+            return false;
+        }
+
+        // Bandingkan menggunakan strtotime()
+        return strtotime($str) >= strtotime($data[$field]);
+    }
+    
+    public function is_date_range_conflict(string $str, string $fields, array $data): bool
+    {
+        // $str di sini adalah end_date, kita butuh start_date juga dari $data
+        $startDate = $data['start_date'];
+        $endDate = $data['end_date'];
+
+        // Jika tanggal tidak valid, loloskan saja (validasi lain akan menangani)
+        if (empty($startDate) || empty($endDate) || strtotime($startDate) >= strtotime($endDate)) {
+            return true;
+        }
+
+        list($idToIgnore) = explode(',', $fields);
+
+        $model = new TahunAjaranModel();
+
+        $conflict = $model->where('id !=', $idToIgnore)
+            ->groupStart()
+            ->where('start_date <', $endDate)
+            ->where('end_date >', $startDate)
+            ->groupEnd()
+            ->first();
+
+        return $conflict === null; // Return true (valid) jika tidak ada konflik
     }
 }
