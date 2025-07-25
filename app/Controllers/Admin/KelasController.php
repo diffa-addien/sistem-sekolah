@@ -14,15 +14,28 @@ class KelasController extends BaseController
      */
     public function index()
     {
-        $model = new KelasModel();
+        $model = new \App\Models\KelasModel();
 
-        // Mengambil data dengan JOIN
-        $data['classes'] = $model->select('classes.id, classes.name, academic_years.year as academic_year, academic_years.status as status')
+        // Ambil filter status dari URL
+        $filter_status = $this->request->getGet('status');
+
+        $query = $model
+            ->select('classes.id, classes.name, academic_years.year as academic_year, users.name as teacher_name, academic_years.status as academic_year_status')
             ->join('academic_years', 'academic_years.id = classes.academic_year_id')
-            ->orderBy('classes.id', 'DESC')
-            ->findAll();
+            ->join('users', 'users.id = classes.teacher_id', 'left');
 
-        // var_dump($data['classes']); die;
+        // Terapkan filter jika ada
+        if ($filter_status === 'aktif') {
+            $query->where('academic_years.status', 'Aktif');
+        } elseif ($filter_status === 'tidak_aktif') {
+            $query->where('academic_years.status', 'Tidak Aktif');
+        }
+
+        $data = [
+            'classes' => $query->orderBy('academic_years.year', 'DESC')->orderBy('classes.name', 'ASC')->paginate(15, 'classes'),
+            'pager' => $model->pager,
+            'selected_status' => $filter_status
+        ];
 
         return view('pages/kelas/index', $data);
     }

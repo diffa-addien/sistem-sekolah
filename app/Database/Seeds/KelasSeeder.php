@@ -17,11 +17,12 @@ class KelasSeeder extends Seeder
         }
 
         $classes = [];
-        for ($i = 1; $i <= 6; $i++) {
+        $classNames = ['1A', '2A', '3A', '4A', '5A', '6A']; // Nama kelas tanpa prefix
+        foreach ($classNames as $index => $name) {
             $classes[] = [
-                'name'              => 'Kelas ' . $i . 'A',
-                'academic_year_id'  => $activeYear['id'],
-                'teacher_id'        => $teachers[$i-1]['id'],
+                'name' => $name,
+                'academic_year_id' => $activeYear['id'],
+                'teacher_id' => $teachers[$index]['id'],
             ];
         }
 

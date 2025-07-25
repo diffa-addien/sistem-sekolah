@@ -81,19 +81,23 @@ class TahunAjaranController extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        $model = new TahunAjaranModel();
+        $model = new \App\Models\TahunAjaranModel();
         $status = $this->request->getPost('status');
+
+        // Jika status yang baru adalah "Aktif"
         if ($status === 'Aktif') {
-            $model->set(['status' => 'Tidak Aktif'])->update();
+            // !! PERBAIKAN: Tambahkan where() untuk menonaktifkan T/A yang aktif sebelumnya !!
+            $model->where('status', 'Aktif')->set(['status' => 'Tidak Aktif'])->update();
         }
 
+        // Simpan data baru
         $model->save($this->request->getPost());
         return redirect()->to('admin/tahun-ajaran')->with('success', 'Data Tahun Ajaran berhasil ditambahkan!');
     }
 
     public function update($id = null)
     {
-        $model = new TahunAjaranModel();
+        $model = new \App\Models\TahunAjaranModel();
 
         $rules = [
             'year' => "required|is_unique[academic_years.year,id,{$id}]",
@@ -113,10 +117,14 @@ class TahunAjaranController extends BaseController
         }
 
         $status = $this->request->getPost('status');
+
+        // Jika status diubah menjadi "Aktif"
         if ($status === 'Aktif') {
-            $model->where('id !=', $id)->set(['status' => 'Tidak Aktif'])->update();
+            // !! PERBAIKAN: Tambahkan where() untuk menonaktifkan T/A lain yang aktif !!
+            $model->where('status', 'Aktif')->where('id !=', $id)->set(['status' => 'Tidak Aktif'])->update();
         }
 
+        // Update data yang sedang diedit
         $model->update($id, $this->request->getPost());
         return redirect()->to('admin/tahun-ajaran')->with('success', 'Data Tahun Ajaran berhasil diperbarui!');
     }

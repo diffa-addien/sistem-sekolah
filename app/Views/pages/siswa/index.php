@@ -13,7 +13,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div>
                 <label for="status" class="block text-sm font-medium text-gray-700">Filter Status</label>
-                <select name="status" id="status" class="block w-full mt-1 text-sm rounded-lg border-gray-300">
+                <select name="status" id="status" class="block w-full p-2 mt-1 text-sm rounded-lg border-gray-300">
                     <option value="">Semua Siswa</option>
                     <option value="aktif" <?= ($selected_status == 'aktif') ? 'selected' : '' ?>>Aktif di T/A Sekarang
                     </option>
@@ -28,7 +28,7 @@
                 <div class="flex space-x-2 mt-1">
                     <input type="text" name="search" placeholder="Masukkan Nama atau NIS..."
                         value="<?= esc($search_keyword ?? '') ?>"
-                        class="block w-full text-sm rounded-lg border-gray-300">
+                        class="block w-full bg-gray-100 px-3 text-sm rounded-lg border-gray-300">
                     <button type="submit"
                         class="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700">Cari</button>
                 </div>
@@ -66,7 +66,7 @@
                                 </div>
                                 <div>
                                     <?php if ($student['total_enrollments'] > 0): ?>
-                                        <a href="<?= site_url('admin/laporan/siswa/' . $student['id']) ?>"
+                                        <a href="<?= site_url('admin/laporan/siswa/' . $student['id']) ?>" title="Lihat Laporan"
                                             class="font-semibold text-sky-600 hover:underline"><?= esc($student['full_name']) ?></a>
                                     <?php else: ?>
                                         <p class="font-semibold"><?= esc($student['full_name']) ?></p>

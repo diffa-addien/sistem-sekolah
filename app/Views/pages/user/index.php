@@ -12,10 +12,10 @@
 
 <div class="mb-4 p-4 bg-white rounded-lg shadow-xs">
     <form action="<?= site_url('admin/user') ?>" method="get">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
             <div class="md:col-span-1">
                 <label for="role" class="block text-sm font-medium text-gray-700">Filter Role</label>
-                <select name="role" id="role" class="block w-full mt-1 text-sm rounded-lg border-gray-300 bg-gray-50 focus:border-purple-400 focus:ring focus:ring-purple-300">
+                <select name="role" id="role" class="block w-full mt-1 p-3 text-sm rounded-lg border-gray-300 bg-gray-50 focus:border-purple-400 focus:ring focus:ring-purple-300">
                     <option value="">Semua Role</option>
                     <option value="Admin" <?= ($selected_role == 'Admin') ? 'selected' : '' ?>>Admin</option>
                     <option value="Guru" <?= ($selected_role == 'Guru') ? 'selected' : '' ?>>Guru</option>
@@ -25,7 +25,7 @@
             <div class="md:col-span-2">
                 <label for="search" class="block text-sm font-medium text-gray-700">Cari Pengguna</label>
                 <div class="flex space-x-2 mt-1">
-                    <input type="text" name="search" id="search" placeholder="Masukkan Nama atau Username..." value="<?= esc($search_keyword ?? '') ?>" class="block w-full text-sm rounded-lg border-gray-300 bg-gray-50 focus:border-purple-400 focus:ring focus:ring-purple-300">
+                    <input type="text" name="search" id="search" placeholder="Masukkan Nama atau Username..." value="<?= esc($search_keyword ?? '') ?>" class="block w-full px-3 text-sm rounded-lg border-gray-300 bg-gray-50 focus:border-purple-400 focus:ring focus:ring-purple-300">
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700">Cari</button>
                 </div>
             </div>
