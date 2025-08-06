@@ -4,6 +4,7 @@
 #include <MFRC522.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include <ArduinoJson.h>
 
 /**
  * JANGAN GANTI DISINI, GANTI DI ARDUINO EDITOR
@@ -13,9 +14,9 @@
 #define RST_PIN D3
 
 // Ganti dengan kredensial WiFi dan URL server Anda
-#define WIFI_SSID "NAMA_WIFI_ANDA"
-#define WIFI_PASSWORD "PASSWORD_WIFI_ANDA"
-#define SERVER_URL "http://192.168.1.10:8080" // Ganti dengan IP Localhost masing-masing
+#define WIFI_SSID "Hendri"
+#define WIFI_PASSWORD "12121212"
+#define SERVER_URL "http://172.20.10.4:8080" // Ganti dengan IP Localhost masing-masing
 
 const char* server_tap_url = SERVER_URL "/api/tap";
 const char* server_scan_url = SERVER_URL "/api/store-scan";
@@ -31,19 +32,20 @@ void setup() {
   lcd.backlight();
 
   lcd.setCursor(0, 0);
-  lcd.print("Connecting WiFi");
+  lcd.print("Menghubungkan WiFi");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     lcd.print(".");
   }
   lcd.clear();
-  lcd.print("WiFi Connected!");
+  lcd.print("WiFi Terhubung!");
   delay(1000);
 }
 
 void loop() {
   lcd.clear();
+  lcd.setCursor(0, 0);
   lcd.print("Tempelkan Kartu");
 
   if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) {
@@ -70,19 +72,36 @@ void loop() {
     String response = httpPost(server_tap_url, "uid=" + uid);
     
     // Tampilkan pesan dari server presensi
-    // (Anda bisa parse JSON di sini jika ingin lebih canggih,
-    // tapi untuk simpelnya kita cari kata kunci saja)
     lcd.setCursor(0, 1);
-    if (response.indexOf("Siswa Tdk Ditemukan") != -1) {
+    if (response.length() == 0) {
+      lcd.print("Respons Kosong");
+      Serial.println("Tidak ada data respons diterima");
+    } else if (response.indexOf("Siswa Tdk Ditemukan") != -1) {
       lcd.print("Kartu Belum Terdaftar");
-    } else if (response.indexOf("success") != -1) {
-        // Cari message diantara quote
-        int msgStart = response.indexOf("\"message\":\"") + 11;
-        int msgEnd = response.indexOf("\"", msgStart);
-        String message = response.substring(msgStart, msgEnd);
-        lcd.print(message);
     } else {
-      lcd.print("Error Koneksi");
+      // Parse JSON menggunakan ArduinoJson
+      DynamicJsonDocument doc(200);
+      DeserializationError error = deserializeJson(doc, response);
+      if (!error) {
+        String status = doc["status"];
+        String message = doc["message"];
+        if (status == "success") {
+          // Batasi panjang pesan agar muat di LCD 16 karakter
+          if (message.length() > 16) {
+            message = message.substring(0, 16);
+          }
+          lcd.print(message);
+        } else if (status == "error") {
+          lcd.print(message.length() > 16 ? message.substring(0, 16) : message);
+        } else {
+          lcd.print("Error Status");
+          Serial.println("Status tidak dikenali: " + status);
+        }
+      } else {
+        lcd.print("Error Parsing");
+        Serial.println("Gagal parsing JSON: " + String(error.c_str()));
+        Serial.println("Respons: " + response);
+      }
     }
 
   } else {
@@ -98,20 +117,32 @@ void loop() {
 String httpPost(const char* url, String postData) {
   HTTPClient http;
   WiFiClient client;
+  http.setTimeout(15000);
   http.begin(client, url);
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  http.addHeader("Connection", "close");
 
   int httpCode = http.POST(postData);
-  String payload = "{}";
+  String payload = "";
 
   if (httpCode > 0) {
-    payload = http.getString();
+    WiFiClient *stream = http.getStreamPtr();
+    unsigned long timeout = millis();
+    while (http.connected() && (millis() - timeout < 10000)) {
+      if (stream->available()) {
+        char c = stream->read();
+        payload += c;
+        timeout = millis();
+      }
+      yield();
+    }
     Serial.println("URL: " + String(url));
-    Serial.println("HTTP Code: " + String(httpCode));
-    Serial.println("Response: " + payload);
+    Serial.println("Kode HTTP: " + String(httpCode));
+    Serial.println("Respons: " + payload);
+    Serial.println("Panjang Respons: " + String(payload.length()));
   } else {
     Serial.println("URL: " + String(url));
-    Serial.println("HTTP Error: " + http.errorToString(httpCode));
+    Serial.println("Error HTTP: " + http.errorToString(httpCode));
   }
 
   http.end();
