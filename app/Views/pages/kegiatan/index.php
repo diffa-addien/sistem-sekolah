@@ -33,7 +33,6 @@ Manajemen Kegiatan Siswa
                         <th class="px-4 py-3">Siswa</th>
                         <th class="px-4 py-3">Kegiatan</th>
                         <th class="px-4 py-3">Deskripsi</th>
-                        <th class="px-4 py-3">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y">
@@ -49,8 +48,6 @@ Manajemen Kegiatan Siswa
                             <td class="px-4 py-3 text-sm"><?= esc($item['activity_name']) ?></td>
                             <td class="px-4 py-3 text-sm max-w-xs truncate" title="<?= esc($item['description']) ?>">
                                 <?= esc($item['description']) ?></td>
-                            <td class="px-4 py-3 text-sm">
-                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
