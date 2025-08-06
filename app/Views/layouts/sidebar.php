@@ -103,7 +103,7 @@ $role = session()->get('role');
                 </li>
             <?php endif ?>
 
-            <?php if ($role === 'Admin') : // Menu ini hanya untuk Admin 
+            <?php if ($role === 'Admin' || $role === 'Guru') : // Menu ini hanya untuk Admin 
             ?>
                 <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'kegiatan' ? 'active' : '' ?>">
                     <a href="<?= base_url('admin/kegiatan') ?>"
@@ -135,7 +135,7 @@ $role = session()->get('role');
                 </li>
             <?php endif ?>
 
-            <?php if ($role === 'Admin') : ?>
+            <?php if ($role === 'Admin' || $role === 'Guru') : ?>
                 <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'laporan' ? 'active' : '' ?>">
                     <a href="<?= base_url('admin/laporan/kehadiran') ?>"
                         class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800">
