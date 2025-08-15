@@ -258,4 +258,75 @@ class LaporanController extends BaseController
         }
         return view('pages/laporan/detail_siswa', $data);
     }
+
+    public function kegiatanPerKelas()
+{
+    $kelasModel = new \App\Models\KelasModel();
+    $kegiatanModel = new \App\Models\KegiatanModel();
+    $enrollmentModel = new \App\Models\EnrollmentModel();
+    $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
+
+    $class_id = $this->request->getGet('class_id');
+    $month = $this->request->getGet('month') ?? date('m');
+    $year = $this->request->getGet('year') ?? date('Y');
+
+    $start_date = "$year-$month-01";
+    $end_date = date("Y-m-t", strtotime($start_date));
+
+    $data = [
+        'classes' => $activeYear ? $kelasModel->where('academic_year_id', $activeYear['id'])->findAll() : [],
+        'selected_class_id' => $class_id,
+        'selected_month' => $month,
+        'selected_year' => $year,
+        'pivotedData' => [],
+        'dateHeaders' => []
+    ];
+
+    if ($class_id) {
+        // Ambil semua siswa yang terdaftar di kelas dan TAHUN AJARAN AKTIF
+        $students_in_class = $enrollmentModel
+            ->select('students.id, students.full_name, students.nis')
+            ->join('students', 'students.id = enrollments.student_id')
+            ->where('enrollments.class_id', $class_id)
+            // !! BARIS PENTING YANG DIPERBAIKI !!
+            ->where('enrollments.academic_year_id', $activeYear['id'])
+            ->findAll();
+        
+        if (!empty($students_in_class)) {
+            $student_ids = array_column($students_in_class, 'id');
+            
+            $raw_activities = $kegiatanModel
+                ->select('activities.student_id, activities.activity_date, activity_names.name as activity_name')
+                ->join('activity_names', 'activity_names.id = activities.activity_name_id')
+                ->whereIn('activities.student_id', $student_ids)
+                ->where('activities.activity_date >=', $start_date)
+                ->where('activities.activity_date <=', $end_date)
+                ->findAll();
+
+            $pivotedData = [];
+            foreach ($students_in_class as $student) {
+                $pivotedData[$student['id']] = ['full_name' => $student['full_name'], 'daily_activities' => []];
+            }
+
+            foreach ($raw_activities as $activity) {
+                if (isset($pivotedData[$activity['student_id']])) {
+                    $pivotedData[$activity['student_id']]['daily_activities'][$activity['activity_date']]['details'][] = $activity['activity_name'];
+                }
+            }
+
+            foreach ($pivotedData as &$studentData) {
+                foreach ($studentData['daily_activities'] as &$dayData) {
+                    $dayData['count'] = count($dayData['details']);
+                }
+            }
+            $data['pivotedData'] = $pivotedData;
+        }
+    }
+    
+    $period = new \DatePeriod( new \DateTime($start_date), new \DateInterval('P1D'), (new \DateTime($end_date))->modify('+1 day'));
+    foreach ($period as $value) { $data['dateHeaders'][] = $value->format('Y-m-d'); }
+
+    return view('pages/laporan/kegiatan_kelas', $data);
+}
+
 }

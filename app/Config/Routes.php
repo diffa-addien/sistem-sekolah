@@ -59,7 +59,10 @@ $routes->group('admin', ['filter' => 'auth:Admin,Guru'], static function ($route
 
     // Di dalam grup 'admin'
     $routes->get('laporan/siswa/(:num)', 'Admin\LaporanController::laporanSiswa/$1');
-    $routes->get('laporan/siswa-selector', 'Admin\LaporanController::laporanSiswaSelector'); // Ganti nama agar jelas
+    $routes->get('laporan/siswa-selector', 'Admin\LaporanController::laporanSiswaSelector');
+    // app/Config/Routes.php di dalam grup 'admin'
+
+    $routes->get('laporan/kegiatan-kelas', 'Admin\LaporanController::kegiatanPerKelas');
 
 
 });
