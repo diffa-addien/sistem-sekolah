@@ -2,6 +2,12 @@
 <?= $this->section('title') ?>Rekap Kehadiran Siswa<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
+<?php
+    $bulanIndonesia = [
+        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+        7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+    ];
+?>
 <div class="container mx-auto px-4 py-6 overflow-hidden">
     <h2 class="text-2xl font-semibold text-gray-700 mb-4">Laporan Kehadiran per Kelas</h2>
 
@@ -19,7 +25,7 @@
             <div>
                 <label for="month" class="block text-sm font-medium">Bulan</label>
                 <select name="month" id="month" class="block w-full mt-1 py-2 px-3 text-sm rounded-lg border-gray-300">
-                    <?php for ($m = 1; $m <= 12; $m++): ?><option value="<?= $m ?>" <?= $selected_month == $m ? 'selected' : '' ?>><?= date('F', mktime(0, 0, 0, $m, 10)) ?></option><?php endfor; ?>
+                    <?php for ($m = 1; $m <= 12; $m++): ?><option value="<?= $m ?>" <?= $selected_month == $m ? 'selected' : '' ?>> <?= $bulanIndonesia[$m] ?></option><?php endfor; ?>
                 </select>
             </div>
             <div>
@@ -39,7 +45,7 @@
                     <tr class="text-xs font-semibold text-center text-gray-500 uppercase border-b bg-gray-50">
                         <th class="px-4 py-3 text-left sticky left-0 bg-gray-100 z-10">Nama Siswa</th>
                         <?php foreach ($dateHeaders as $date): ?>
-                            <th class="px-3 py-3 min-w-[60px]"><?= date('d M', strtotime($date)) ?></th>
+                            <th class="px-3 py-3 min-w-[60px]"><?= date('d', strtotime($date)) ?></th>
                         <?php endforeach; ?>
                     </tr>
                 </thead>

@@ -1,6 +1,13 @@
 <?= $this->extend('layouts/template') ?>
 <?= $this->section('title') ?>Laporan Kegiatan per Kelas<?= $this->endSection() ?>
 
+<?php
+    $bulanIndonesia = [
+        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+        7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+    ];
+?>
+
 <?= $this->section('content') ?>
 <div class="container mx-auto px-4 py-6 overflow-hidden" x-data="activityModal()">
   <h2 class="text-2xl font-semibold text-gray-700 mb-4">Laporan Kegiatan per Kelas</h2>
@@ -23,7 +30,7 @@
         <select name="month" id="month" class="block w-full mt-1 py-2 px-3 text-sm rounded-lg border-gray-300">
           <?php for ($m = 1; $m <= 12; $m++): ?>
             <option value="<?= $m ?>" <?= $selected_month == $m ? 'selected' : '' ?>>
-              <?= date('F', mktime(0, 0, 0, $m, 10)) ?>
+              <?= $bulanIndonesia[$m] ?>
             </option><?php endfor; ?>
         </select>
       </div>
@@ -73,7 +80,7 @@
             <th class="px-4 py-3 text-left sticky left-0 bg-gray-100 z-10">Nama Siswa</th>
             <?php if (!empty($pivotedData)):
               foreach ($dateHeaders as $date): ?>
-                <th class="px-2 py-3"><?= date('d M', strtotime($date)) ?></th>
+                <th class="px-2 py-3"><?= date('d', strtotime($date)) ?></th>
               <?php endforeach; endif; ?>
           </tr>
         </thead>
