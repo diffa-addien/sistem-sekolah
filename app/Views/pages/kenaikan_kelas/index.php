@@ -22,7 +22,7 @@
                     <input type="text" value="<?= esc($active_year['year'] ?? 'Tidak ada T/A aktif') ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100" readonly>
                 </div>
                 <div>
-                    <button type="submit" class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">Tampilkan Data</button>
+                    <button type="submit" class="w-full px-4 py-2 text-white bg-sky-600 rounded-lg hover:bg-sky-700">Tampilkan Data</button>
                 </div>
             </div>
         </form>
