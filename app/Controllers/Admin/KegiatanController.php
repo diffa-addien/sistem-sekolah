@@ -32,39 +32,78 @@ class KegiatanController extends BaseController
 
     public function index()
     {
-        $model = new \App\Models\KegiatanModel();
+        // Panggil semua model yang dibutuhkan
+        $kelasModel = new \App\Models\KelasModel();
+        $enrollmentModel = new \App\Models\EnrollmentModel();
+        $kegiatanModel = new \App\Models\KegiatanModel();
+        $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
 
-        // Query dasar untuk mengambil data kegiatan
-        $query = $model
-            ->select('activities.*, students.full_name, activity_names.name as activity_name')
-            ->join('students', 'students.id = activities.student_id')
-            ->join('activity_names', 'activity_names.id = activities.activity_name_id');
+        $userRole = session()->get('role');
+        $userId = session()->get('user_id');
 
-        // Filter jika yang login adalah Guru
-        if (session()->get('role') === 'Guru') {
-            $teacherClassId = $this->getTeacherClassId(); // Menggunakan helper function
+        // Ambil filter dari URL, default ke hari ini
+        $date = $this->request->getGet('date') ?? date('Y-m-d');
+        $class_id = $this->request->getGet('class_id');
 
-            if ($teacherClassId) {
-                // 1. Dapatkan semua ID siswa yang ada di kelas guru tersebut
-                $enrollmentModel = new \App\Models\EnrollmentModel();
-                $studentsInClass = $enrollmentModel->where('class_id', $teacherClassId)->findAll();
+        $data = [
+            'classes' => [],
+            'students' => [],
+            'activityData' => [],
+            'selected_class_id' => null,
+            'selected_date' => $date,
+            'is_teacher' => ($userRole === 'Guru'),
+        ];
 
-                if (!empty($studentsInClass)) {
-                    $student_ids = array_column($studentsInClass, 'student_id');
-                    // 2. Filter kegiatan berdasarkan daftar ID siswa tersebut
-                    $query->whereIn('activities.student_id', $student_ids);
-                } else {
-                    // Jika kelas guru tersebut kosong, jangan tampilkan kegiatan apa pun
-                    $query->where('activities.id', 0);
-                }
-            } else {
-                // Jika guru tidak ditugaskan ke kelas mana pun, jangan tampilkan kegiatan apa pun
-                $query->where('activities.id', 0);
+        if (!$activeYear) {
+            return view('pages/kegiatan/index', $data); // Tampilkan halaman kosong jika T/A tidak aktif
+        }
+
+        // Tentukan kelas mana yang akan ditampilkan
+        if ($userRole === 'Admin') {
+            $data['classes'] = $kelasModel->where('academic_year_id', $activeYear['id'])->findAll();
+            if ($class_id) {
+                $data['selected_class_id'] = $class_id;
+            }
+        } elseif ($userRole === 'Guru') {
+            $assigned_class = $kelasModel->where('teacher_id', $userId)->where('academic_year_id', $activeYear['id'])->first();
+            if ($assigned_class) {
+                $data['selected_class_id'] = $assigned_class['id'];
+                $data['classes'][] = $assigned_class;
             }
         }
 
-        $data['activities'] = $query->orderBy('activities.activity_date', 'DESC')->paginate(20, 'activities');
-        $data['pager'] = (new \App\Models\KegiatanModel())->pager;
+        // Jika sudah ada kelas yang dipilih, ambil data siswa dan kegiatannya
+        if ($data['selected_class_id']) {
+            // Ambil daftar siswa di kelas tersebut
+            $data['students'] = $enrollmentModel
+                ->select('students.*')
+                ->join('students', 'students.id = enrollments.student_id')
+                ->where('enrollments.class_id', $data['selected_class_id'])
+                ->where('enrollments.academic_year_id', $activeYear['id'])
+                ->findAll();
+
+            // Ambil data kegiatan untuk siswa-siswa tersebut pada tanggal yang dipilih
+            $student_ids = array_column($data['students'], 'id');
+            if (!empty($student_ids)) {
+                $raw_activities = $kegiatanModel
+                    ->select('activities.student_id, activity_names.name as activity_name')
+                    ->join('activity_names', 'activity_names.id = activities.activity_name_id')
+                    ->whereIn('activities.student_id', $student_ids)
+                    ->where('activities.activity_date', $date)
+                    ->findAll();
+
+                // Proses dan kelompokkan data kegiatan per siswa
+                $activityData = [];
+                foreach ($raw_activities as $activity) {
+                    $activityData[$activity['student_id']]['details'][] = $activity['activity_name'];
+                }
+                // Hitung total kegiatan per siswa
+                foreach ($activityData as &$studentData) {
+                    $studentData['count'] = count($studentData['details']);
+                }
+                $data['activityData'] = $activityData;
+            }
+        }
 
         return view('pages/kegiatan/index', $data);
     }

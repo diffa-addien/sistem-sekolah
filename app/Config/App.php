@@ -6,6 +6,8 @@ use CodeIgniter\Config\BaseConfig;
 
 class App extends BaseConfig
 {
+    public string $appName = 'Sistem Sekolah';
+
     /**
      * --------------------------------------------------------------------------
      * Base Site URL

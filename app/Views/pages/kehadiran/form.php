@@ -7,39 +7,39 @@ Input Kehadiran Siswa
 <?= $this->section('content') ?>
 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Input Kehadiran Siswa</h2>
 
-<div class="px-4 py-3 mb-8 bg-white rounded-lg shadow-md">
+<div class="px-4 py-3 mb-8 bg-white rounded-2xl border border-gray-300 shadow-sm">
   <form action="<?= site_url('admin/kehadiran') ?>" method="get">
-    <div class="flex flex-wrap items-end space-x-4">
+    <div class="flex flex-wrap items-end gap-4">
+      <?php if(!$is_teacher): ?>
       <div class="flex-1">
         <label for="class_id" class="block text-sm font-medium text-gray-700">Pilih Kelas</label>
-        <select name="class_id" id="class_id" class="input-field mt-1" required>
+        <select name="class_id" id="class_id" class="block w-full mt-1 text-sm rounded-lg border-gray-300" required>
           <option value="">-- Silakan Pilih --</option>
           <?php foreach ($classes as $class) : ?>
-            <option value="<?= $class['id'] ?>" <?= ($selected_class_id == $class['id']) ? 'selected' : '' ?>>
-              <?= esc($class['name']) ?>
-            </option>
+            <option value="<?= $class['id'] ?>" <?= ($selected_class_id == $class['id']) ? 'selected' : '' ?>><?= esc($class['name']) ?></option>
           <?php endforeach; ?>
         </select>
       </div>
+      <?php endif; ?>
       <div class="flex-1">
         <label for="date" class="block text-sm font-medium text-gray-700">Pilih Tanggal</label>
-        <input type="date" name="date" id="date" value="<?= esc($selected_date) ?>" class="input-field mt-1" required>
+        <input type="date" name="date" id="date" value="<?= esc($selected_date) ?>" class="block w-full mt-1 text-sm rounded-lg border-gray-300" required>
       </div>
       <div>
-        <button type="submit" class="btn-primary">Tampilkan Siswa</button>
+        <button type="submit" class="w-full px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700">Tampilkan Siswa</button>
       </div>
     </div>
   </form>
 </div>
 
 <?php if (!empty($students)) : ?>
-  <div class="px-4 py-3 mb-8 bg-white rounded-lg shadow-md">
+  <div class="px-4 py-3 mb-8 bg-white rounded-2xl border border-gray-300 shadow-sm">
     <form action="<?= site_url('admin/kehadiran/simpan') ?>" method="post">
       <?= csrf_field() ?>
       <input type="hidden" name="class_id" value="<?= esc($selected_class_id) ?>">
       <input type="hidden" name="date" value="<?= esc($selected_date) ?>">
 
-      <div class="w-full overflow-hidden rounded-lg shadow-xs">
+      <div class="w-full overflow-hidden rounded-lg">
         <div class="w-full overflow-x-auto">
           <table class="w-full whitespace-no-wrap">
             <thead>
@@ -50,15 +50,18 @@ Input Kehadiran Siswa
             </thead>
             <tbody class="bg-white divide-y">
               <?php foreach ($students as $student) : ?>
-                <?php
-                // Cek status yang sudah tersimpan, jika tidak ada, defaultnya KOSONG
-                $current_status = $attendance_records[$student['id']]['status'] ?? '';
-                ?>
+                <?php $current_status = $attendance_records[$student['id']]['status'] ?? ''; ?>
                 <tr class="text-gray-700">
                   <td class="px-4 py-3">
                     <div class="flex items-center text-sm">
-                      <div class="relative hidden w-8 h-8 mr-3 rounded-full md:block">
-                        <img class="object-cover w-full h-full rounded-full" src="<?= base_url('uploads/photos/' . ($student['photo'] ?? 'default.png')) ?>" alt="" loading="lazy" />
+                      <div class="relative w-10 h-10 mr-3 rounded-full flex-shrink-0">
+                        <img class="object-cover w-full h-full rounded-full" 
+                             src="<?= base_url('uploads/photos/' . ($student['photo'] ?? 'default.png')) ?>" 
+                             alt="Foto Profil" loading="lazy"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="hidden absolute inset-0 flex items-center justify-center rounded-full bg-sky-900 text-white text-lg font-semibold">
+                            <?= esc(strtoupper(substr($student['full_name'], 0, 1))) ?>
+                        </div>
                       </div>
                       <div>
                         <p class="font-semibold"><?= esc($student['full_name']) ?></p>
@@ -67,12 +70,11 @@ Input Kehadiran Siswa
                     </div>
                   </td>
                   <td class="px-4 py-3 text-sm">
-                    <div class="flex items-center justify-center space-x-4">
-                      <?php $statuses = ['Hadir', 'Sakit', 'Izin']; // Pilihan Alfa dihapus 
-                      ?>
+                    <div class="flex items-center justify-center space-x-2 sm:space-x-4">
+                      <?php $statuses = ['Hadir', 'Sakit', 'Izin']; ?>
                       <?php foreach ($statuses as $status) : ?>
                         <label class="inline-flex items-center">
-                          <input type="radio" class="radio-field" name="status[<?= $student['id'] ?>]" value="<?= $status ?>" <?= ($status === $current_status) ? 'checked' : '' ?>>
+                          <input type="radio" class="w-4 h-4 text-sky-600" name="status[<?= $student['id'] ?>]" value="<?= $status ?>" <?= ($status === $current_status) ? 'checked' : '' ?>>
                           <span class="ml-2"><?= $status ?></span>
                         </label>
                       <?php endforeach; ?>
@@ -86,52 +88,14 @@ Input Kehadiran Siswa
       </div>
 
       <div class="flex justify-end mt-6">
-        <button type="submit" class="btn-primary">Simpan / Update Kehadiran</button>
+        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700">Simpan / Update Kehadiran</button>
       </div>
     </form>
   </div>
+<?php elseif($selected_class_id): ?>
+  <div class="px-4 py-3 text-center bg-white rounded-2xl border border-gray-300 shadow-sm">
+    <p class="text-gray-600">Tidak ada siswa yang terdaftar di kelas ini pada tahun ajaran aktif.</p>
+  </div>
 <?php endif; ?>
 
-<style>
-  .input-field {
-    display: block;
-    width: 100%;
-    padding: 0.625rem;
-    font-size: 0.875rem;
-    color: #111827;
-    background-color: #F9FAFB;
-    border: 1px solid #D1D5DB;
-    border-radius: 0.5rem
-  }
-
-  .input-field:focus {
-    --tw-ring-color: #9333ea;
-    border-color: #9333ea;
-    box-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color)
-  }
-
-  .radio-field {
-    width: 1rem;
-    height: 1rem;
-    color: #9333ea;
-    background-color: #F3F4F6;
-    border-color: #D1D5DB
-  }
-
-  .btn-primary {
-    padding-left: 1rem;
-    padding-right: 1rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: white;
-    background-color: #9333ea;
-    border-radius: 0.5rem
-  }
-
-  .btn-primary:hover {
-    background-color: #7e22ce
-  }
-</style>
 <?= $this->endSection() ?>

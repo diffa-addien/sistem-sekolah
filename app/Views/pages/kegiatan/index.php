@@ -1,104 +1,101 @@
 <?= $this->extend('layouts/template') ?>
-
-<?= $this->section('title') ?>
-Manajemen Kegiatan Siswa
-<?= $this->endSection() ?>
+<?= $this->section('title') ?>Rangkuman Kegiatan Harian<?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<div class="container mx-auto px-4 sm:px-8 py-8">
-
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Manajemen Kegiatan Siswa</h1>
-            <p class="mt-1 text-gray-500 dark:text-gray-400">Daftar semua catatan kegiatan yang tersimpan.</p>
-        </div>
-        <a href="<?= site_url('admin/kegiatan/new') ?>"
-            class="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700 active:bg-purple-900 focus:outline-none focus:border-purple-900 focus:ring ring-purple-300 disabled:opacity-25 transition ease-in-out duration-150">
-            <svg class="w-4 h-4 mr-2 -ml-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd"
-                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                    clip-rule="evenodd" />
-            </svg>
-            Catat Kegiatan Baru
-        </a>
+<div class="container mx-auto px-4 py-6" x-data="activityModal()">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-semibold text-gray-700">Rangkuman Kegiatan Harian</h2>
+        <a href="<?= site_url('admin/kegiatan/new') ?>" class="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700">Catat Kegiatan Manual</a>
     </div>
 
-    <div class="rounded-lg overflow-hidden">
-        <div class="hidden md:block">
-            <table id="kegiatanTable" class="min-w-full leading-normal">
+    <div class="mb-6 p-4 bg-white rounded-2xl border border-gray-300 shadow-sm">
+        <form action="<?= site_url('admin/kegiatan') ?>" method="get">
+            <div class="flex flex-wrap items-end gap-4">
+                <?php if(!$is_teacher): ?>
+                <div class="flex-1">
+                    <label for="class_id" class="block text-sm font-medium text-gray-700">Pilih Kelas</label>
+                    <select name="class_id" id="class_id" class="block w-full mt-1 text-sm rounded-lg border-gray-300" required>
+                        <option value="">-- Silakan Pilih --</option>
+                        <?php foreach ($classes as $class) : ?>
+                            <option value="<?= $class['id'] ?>" <?= ($selected_class_id == $class['id']) ? 'selected' : '' ?>><?= esc($class['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <?php endif; ?>
+                <div class="flex-1">
+                    <label for="date" class="block text-sm font-medium text-gray-700">Pilih Tanggal</label>
+                    <input type="date" name="date" id="date" value="<?= esc($selected_date) ?>" class="block w-full mt-1 text-sm rounded-lg border-gray-300" required>
+                </div>
+                <div>
+                    <button type="submit" class="w-full px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700">Tampilkan</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="w-full overflow-hidden rounded-2xl border border-gray-300">
+        <div class="w-full overflow-x-auto">
+            <table class="w-full whitespace-no-wrap">
                 <thead>
-                    <tr
-                        class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b bg-gray-50">
-                        <th class="px-4 py-3">Tanggal</th>
+                    <tr class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b bg-gray-50">
                         <th class="px-4 py-3">Siswa</th>
-                        <th class="px-4 py-3">Kegiatan</th>
-                        <th class="px-4 py-3">Deskripsi</th>
+                        <th class="px-4 py-3 text-center">Jumlah Kegiatan</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y">
-                    <?php foreach ($activities as $item): ?>
+                    <?php if (!empty($students)): foreach ($students as $student) : ?>
                         <tr class="text-gray-700">
-                            <td class="px-4 py-3 text-sm"><?= date('d M Y', strtotime($item['activity_date'])) ?></td>
-                            <td class="px-4 py-3 text-sm font-semibold">
-                                <a href="<?= site_url('admin/laporan/siswa/' . $item['student_id']) ?>"
-                                    class="hover:underline text-sky-600">
-                                    <?= esc($item['full_name']) ?>
-                                </a>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center text-sm">
+                                    <div class="relative w-10 h-10 mr-3 rounded-full flex-shrink-0">
+                                        <img class="object-cover w-full h-full rounded-full" src="<?= base_url('uploads/photos/' . ($student['photo'] ?? 'default.png')) ?>" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="hidden absolute inset-0 flex items-center justify-center rounded-full bg-sky-900 text-white text-lg font-semibold"><?= esc(strtoupper(substr($student['full_name'], 0, 1))) ?></div>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold"><?= esc($student['full_name']) ?></p>
+                                        <p class="text-xs text-gray-600">NIS: <?= esc($student['nis']) ?></p>
+                                    </div>
+                                </div>
                             </td>
-                            <td class="px-4 py-3 text-sm"><?= esc($item['activity_name']) ?></td>
-                            <td class="px-4 py-3 text-sm max-w-xs truncate" title="<?= esc($item['description']) ?>">
-                                <?= esc($item['description']) ?></td>
+                            <td class="px-4 py-3 text-sm text-center">
+                                <?php 
+                                    $current_activity = $activityData[$student['id']] ?? ['count' => 0, 'details' => []];
+                                ?>
+                                <?php if($current_activity['count'] > 0): ?>
+                                    <button @click="open('<?= esc($student['full_name']) ?>', '<?= date('d M Y', strtotime($selected_date)) ?>', '<?= htmlspecialchars(json_encode($current_activity['details']), ENT_QUOTES) ?>')"
+                                        class="px-3 py-1 text-sm font-semibold text-sky-700 bg-sky-100 rounded-full hover:bg-sky-200">
+                                        <?= $current_activity['count'] ?> Kegiatan
+                                    </button>
+                                <?php else: ?>
+                                    <span class="text-gray-400">0</span>
+                                <?php endif; ?>
+                            </td>
                         </tr>
-                    <?php endforeach; ?>
+                    <?php endforeach; elseif ($selected_class_id): ?>
+                        <tr><td colspan="2" class="text-center py-4 text-gray-500">Tidak ada data untuk ditampilkan.</td></tr>
+                    <?php else: ?>
+                        <tr><td colspan="2" class="text-center py-4 text-gray-500">Silakan pilih kelas dan tanggal untuk melihat rangkuman.</td></tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
-
-        <div class="block md:hidden">
-            <div class="px-4 py-4 space-y-4">
-                <?php foreach ($activities as $item): ?>
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border dark:border-gray-700">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="font-bold text-lg text-gray-900 dark:text-gray-100"><?= esc($item['full_name']) ?>
-                                </p>
-                                <p class="text-sm text-gray-600 dark:text-gray-400"><?= esc($item['activity_name']) ?></p>
-                            </div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-2">
-                                <?= date('d M Y', strtotime($item['activity_date'])) ?>
-                            </div>
-                        </div>
-                        <p class="mt-3 text-sm text-gray-700 dark:text-gray-300">
-                            <?= esc($item['description']) ?>
-                        </p>
-                        <div class="flex justify-end items-center mt-4 pt-4 border-t dark:border-gray-700 space-x-3">
-                            <a href="<?= site_url('admin/kegiatan/' . $item['id'] . '/edit') ?>"
-                                class="flex items-center px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-gray-700 rounded-full hover:bg-blue-200 dark:hover:bg-gray-600 focus:outline-none">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z">
-                                    </path>
-                                </svg>
-                                Edit
-                            </a>
-                            <form action="<?= site_url('admin/kegiatan/' . $item['id']) ?>" method="post"
-                                onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');" class="inline">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="_method" value="DELETE">
-                                <button type="submit"
-                                    class="flex items-center px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 bg-red-100 dark:bg-gray-700 rounded-full hover:bg-red-200 dark:hover:bg-gray-600 focus:outline-none"
-                                    aria-label="Delete">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                        </path>
-                                    </svg>
-                                    Hapus
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
+    </div>
+    
+    <div x-show="isOpen" @keydown.escape.window="close()" class="fixed inset-0 z-30 flex items-center justify-center bg-black bg-opacity-50" x-cloak>
+        <div @click.away="close()" class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center border-b pb-3">
+                <div>
+                    <h3 class="text-lg font-semibold" x-text="`Detail Kegiatan: ${studentName}`"></h3>
+                    <p class="text-sm text-gray-500" x-text="date"></p>
+                </div>
+                <button @click="close()" class="p-2 rounded-full hover:bg-gray-100 -mt-2 -mr-2">&times;</button>
+            </div>
+            <div class="mt-4 max-h-60 overflow-y-auto">
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <template x-for="activity in activities">
+                        <li x-text="activity"></li>
+                    </template>
+                </ul>
             </div>
         </div>
     </div>
@@ -107,17 +104,16 @@ Manajemen Kegiatan Siswa
 
 <?= $this->section('scripts') ?>
 <script>
-    // Hanya inisialisasi DataTable pada layar desktop
-    // DataTable tidak ideal untuk layout card di mobile
-    $(document).ready(function () {
-        if ($(window).width() > 768) { // 768px adalah breakpoint 'md' di Tailwind
-            $('#kegiatanTable').DataTable({
-                "order": [[0, "desc"]],
-                "language": {
-                    "url": "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json"
-                }
-            });
-        }
-    });
+function activityModal() {
+    return {
+        isOpen: false, studentName: '', date: '', activities: [],
+        open(studentName, date, activitiesJson) {
+            this.studentName = studentName; this.date = date;
+            this.activities = JSON.parse(activitiesJson.replace(/&quot;/g, '"'));
+            this.isOpen = true;
+        },
+        close() { this.isOpen = false; }
+    }
+}
 </script>
 <?= $this->endSection() ?>

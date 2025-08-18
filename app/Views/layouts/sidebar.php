@@ -17,12 +17,16 @@ if (count($uri->getSegments()) >= 3) {
     $segment3 = $uri->getSegment(3);
 }
 $role = session()->get('role');
+$config = config('App');
+
 ?>
 
 <aside class="z-20 hidden w-64 overflow-y-auto bg-white border-r border-gray-300 md:block flex-shrink-0">
     <div class="py-4 text-gray-500">
-        <a class="ml-6 text-lg font-bold text-gray-800" href="#">
-            Baitul Jannah
+        <a class="ml-4 flex items-center text-lg font-bold text-gray-800" href="#">
+            <img src="<?= base_url('assets/logo.png') ?>" alt="Logo"
+                class="w-10 h-10 border border-gray-500 rounded-full mr-2">
+            <?= $config->appName ?>
         </a>
         <ul class="mt-5 ">
             <li class="relative px-6 pt-4 pb-3 <?= $segment2 == 'dashboard' ? 'active' : '' ?>">
@@ -115,7 +119,7 @@ $role = session()->get('role');
                             <path
                                 d="M2 5.5L3.21429 7L7.5 3 M2 12.5L3.21429 14L7.5 10 M2 19.5L3.21429 21L7.5 17 M22 19L12 19 M22 12L12 12 M22 5L12 5" />
                         </svg>
-                        <span class="ml-4">Catatan Kegiatan</span>
+                        <span class="ml-4">Kegiatan</span>
                     </a>
                 </li>
             <?php endif ?>
@@ -314,7 +318,7 @@ $role = session()->get('role');
                             <path
                                 d="M2 5.5L3.21429 7L7.5 3 M2 12.5L3.21429 14L7.5 10 M2 19.5L3.21429 21L7.5 17 M22 19L12 19 M22 12L12 12 M22 5L12 5" />
                         </svg>
-                        <span class="ml-4">Catatan Kegiatan</span>
+                        <span class="ml-4">Kegiatan</span>
                     </a>
                 </li>
             <?php endif ?>
