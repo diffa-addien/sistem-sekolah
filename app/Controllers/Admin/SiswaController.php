@@ -39,15 +39,15 @@ class SiswaController extends BaseController
                 $query->where('en.academic_year_id', $activeYear['id'] ?? 0);
                 $query->where('en.status', 'Aktif');
             } elseif ($filter_status === 'riwayat') {
-                 $query->whereIn('en.status', ['Lulus', 'Naik Kelas', 'Tinggal Kelas', 'Keluar']);
+                $query->whereIn('en.status', ['Lulus', 'Naik Kelas', 'Tinggal Kelas', 'Keluar']);
             }
         }
 
         if ($search) {
             $query->groupStart()
-                  ->like('students.full_name', $search)
-                  ->orLike('students.nis', $search)
-                  ->groupEnd();
+                ->like('students.full_name', $search)
+                ->orLike('students.nis', $search)
+                ->groupEnd();
         }
 
         $data = [
@@ -65,7 +65,7 @@ class SiswaController extends BaseController
         $kelasModel = new KelasModel();
         $userModel = new UserModel();
         $activeYear = (new TahunAjaranModel())->where('status', 'Aktif')->first();
-        
+
         $data = [
             'classes' => $activeYear ? $kelasModel->where('academic_year_id', $activeYear['id'])->findAll() : [],
             'parents' => $userModel->where('role', 'Wali Murid')->findAll()
@@ -79,11 +79,23 @@ class SiswaController extends BaseController
             'nis' => 'required|is_unique[students.nis]',
             'full_name' => 'required',
             'class_id' => 'required|is_not_unique[classes.id]',
-            // ... aturan validasi lainnya
+            'gender' => 'required|in_list[Laki-laki,Perempuan]',
+            'birth_date' => 'required',
+            'user_id' => 'permit_empty|is_not_unique[users.id]',
+            'card_uid' => 'permit_empty|is_unique[students.card_uid]',
+            'photo' => 'max_size[photo,1024]|is_image[photo]|mime_in[photo,image/jpg,image/jpeg,image/png]'
         ];
 
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        // Logika Upload Foto
+        $photoFile = $this->request->getFile('photo');
+        $photoName = null; // Defaultnya null
+        if ($photoFile && $photoFile->isValid() && !$photoFile->hasMoved()) {
+            $photoName = $photoFile->getRandomName();
+            $photoFile->move(FCPATH . 'uploads/photos', $photoName);
         }
 
         $db = \Config\Database::connect();
@@ -98,14 +110,15 @@ class SiswaController extends BaseController
             'birth_date' => $this->request->getPost('birth_date'),
             'user_id' => $this->request->getPost('user_id') ?: null,
             'card_uid' => $this->request->getPost('card_uid') ?: null,
+            'photo' => $photoName, // Simpan nama file foto
         ];
         $siswaModel->insert($siswaData);
         $studentId = $siswaModel->getInsertID();
 
         // 2. Simpan data pendaftaran (enrollment)
-        $activeYear = (new TahunAjaranModel())->where('status', 'Aktif')->first();
+        $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
         if ($this->request->getPost('class_id') && $activeYear) {
-            $enrollmentModel = new EnrollmentModel();
+            $enrollmentModel = new \App\Models\EnrollmentModel();
             $enrollmentModel->insert([
                 'student_id' => $studentId,
                 'class_id' => $this->request->getPost('class_id'),
@@ -113,7 +126,7 @@ class SiswaController extends BaseController
                 'status' => 'Aktif'
             ]);
         }
-        
+
         $db->transComplete();
 
         if ($db->transStatus() === false) {
@@ -130,7 +143,7 @@ class SiswaController extends BaseController
         $userModel = new UserModel();
         $enrollmentModel = new EnrollmentModel();
         $activeYear = (new TahunAjaranModel())->where('status', 'Aktif')->first();
-        
+
         $data = [
             'student' => $siswaModel->find($id),
             'parents' => $userModel->where('role', 'Wali Murid')->findAll(),
@@ -142,51 +155,81 @@ class SiswaController extends BaseController
 
     public function update($id = null)
     {
+        $siswaModel = new \App\Models\SiswaModel();
+        $enrollmentModel = new \App\Models\EnrollmentModel();
+        $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
+
+        // 1. Aturan Validasi
         $rules = [
             'nis' => "required|is_unique[students.nis,id,{$id}]",
             'card_uid' => "permit_empty|is_unique[students.card_uid,id,{$id}]",
-            // ... aturan validasi lainnya
+            'full_name' => 'required',
+            'class_id' => 'permit_empty|is_not_unique[classes.id]',
+            'gender' => 'required|in_list[Laki-laki,Perempuan]',
+            'birth_date' => 'required',
+            'user_id' => 'permit_empty|is_not_unique[users.id]',
+            'photo' => 'max_size[photo,2048]|is_image[photo]|mime_in[photo,image/jpg,image/jpeg,image/png,image/webp]'
         ];
+
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
         $db = \Config\Database::connect();
-        $db->transStart();
+        $db->transStart(); // Mulai transaksi
 
-        // 1. Update data utama siswa
-        $siswaModel = new SiswaModel();
-        // ... (logika update data siswa dan foto)
-        $siswaData = [
-            'nis'        => $this->request->getPost('nis'),
-            'full_name'  => $this->request->getPost('full_name'),
-            'user_id'    => $this->request->getPost('user_id') ?: null,
-            'gender'     => $this->request->getPost('gender'),
+        // 2. Siapkan data untuk tabel 'students'
+        $oldStudentData = $siswaModel->find($id);
+
+        $dataToUpdate = [
+            'nis' => $this->request->getPost('nis'),
+            'full_name' => $this->request->getPost('full_name'),
+            'user_id' => $this->request->getPost('user_id') ?: null,
+            'gender' => $this->request->getPost('gender'),
             'birth_date' => $this->request->getPost('birth_date'),
-            'card_uid'   => $this->request->getPost('card_uid') ?: null,
+            'card_uid' => $this->request->getPost('card_uid') ?: null,
         ];
-        $siswaModel->update($id, $siswaData);
 
-        // 2. Logika "Upsert" data pendaftaran (enrollment)
-        $activeYear = (new TahunAjaranModel())->where('status', 'Aktif')->first();
+        // 3. Logika Upload Foto Baru
+        $photoFile = $this->request->getFile('photo');
+        if ($photoFile && $photoFile->isValid() && !$photoFile->hasMoved()) {
+            $oldPhoto = $oldStudentData['photo'];
+            // Hapus foto lama jika ada dan bukan default
+            if ($oldPhoto && $oldPhoto !== 'default.png' && file_exists(FCPATH . 'uploads/photos/' . $oldPhoto)) {
+                unlink(FCPATH . 'uploads/photos/' . $oldPhoto);
+            }
+            // Pindahkan foto baru dan simpan namanya
+            $newPhotoName = $photoFile->getRandomName();
+            $photoFile->move(FCPATH . 'uploads/photos', $newPhotoName);
+            $dataToUpdate['photo'] = $newPhotoName;
+        }
+
+        // 4. Update tabel 'students'
+        $siswaModel->update($id, $dataToUpdate);
+
+        // 5. Logika "Upsert" untuk tabel 'enrollments'
         $classId = $this->request->getPost('class_id');
-        
         if ($classId && $activeYear) {
-            $enrollmentModel = new EnrollmentModel();
             $existingEnrollment = $enrollmentModel->where(['student_id' => $id, 'academic_year_id' => $activeYear['id']])->first();
+
             if ($existingEnrollment) {
                 if ($existingEnrollment['class_id'] != $classId) {
                     $enrollmentModel->update($existingEnrollment['id'], ['class_id' => $classId]);
                 }
             } else {
-                $enrollmentModel->insert(['student_id' => $id, 'class_id' => $classId, 'academic_year_id' => $activeYear['id'], 'status' => 'Aktif']);
+                $enrollmentModel->insert([
+                    'student_id' => $id,
+                    'class_id' => $classId,
+                    'academic_year_id' => $activeYear['id'],
+                    'status' => 'Aktif'
+                ]);
             }
         }
-        
-        $db->transComplete();
+
+        $db->transComplete(); // Selesaikan transaksi
 
         if ($db->transStatus() === false) {
-            return redirect()->back()->with('error', 'Gagal memperbarui data siswa.');
+            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui data siswa.');
         }
 
         return redirect()->to('admin/siswa')->with('success', 'Data Siswa berhasil diperbarui!');
