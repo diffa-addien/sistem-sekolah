@@ -20,7 +20,15 @@ $bulanIndonesia = [
 
 <?= $this->section('content') ?>
 <div class="container mx-auto px-4 py-6 overflow-hidden" x-data="activityReport()">
-  <h2 class="text-2xl font-semibold text-gray-700 mb-4">Laporan Rangkuman Kegiatan per Kelas</h2>
+  <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+    <h2 class="text-2xl font-semibold text-gray-700">Laporan Rangkuman Kegiatan per Kelas</h2>
+    <?php if ($selected_class_id): ?>
+      <a href="<?= current_url() . '?' . http_build_query(request()->getGet()) . '&export=pdf' ?>" target="_blank"
+        class="px-4 py-2 text-sm font-medium text-white bg-lime-600 rounded-lg hover:bg-lime-700">
+        Cetak ke PDF
+      </a>
+    <?php endif; ?>
+  </div>
 
   <div class="mb-6 p-4 bg-white rounded-2xl border border-gray-300 shadow-sm">
     <form method="get" class="flex flex-wrap items-end gap-4">

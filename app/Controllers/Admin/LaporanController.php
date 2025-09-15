@@ -11,6 +11,8 @@ use App\Models\KegiatanModel;
 use App\Models\EnrollmentModel;
 use App\Models\ActivityNameModel;
 
+use Dompdf\Dompdf;
+
 
 class LaporanController extends BaseController
 {
@@ -50,32 +52,55 @@ class LaporanController extends BaseController
             if (!empty($students_in_class)) {
                 $student_ids = array_column($students_in_class, 'id');
 
-                $monthly_raw_data = $kehadiranModel->whereIn('student_id', $student_ids)->where('attendance_date >=', $start_date_month)->where('attendance_date <=', $end_date_month)->findAll();
+                // 1. Ambil data bulanan untuk tabel pivot
+                $monthly_raw_data = $kehadiranModel
+                    ->whereIn('student_id', $student_ids)
+                    ->where('attendance_date >=', $start_date_month)
+                    ->where('attendance_date <=', $end_date_month)
+                    ->findAll();
 
+                // 2. Ambil semua data kehadiran di tahun ajaran aktif untuk popup
                 $yearly_raw_data = [];
                 if (!empty($activeYear['start_date']) && !empty($activeYear['end_date'])) {
-                    $yearly_raw_data = $kehadiranModel->whereIn('student_id', $student_ids)->where('attendance_date >=', $activeYear['start_date'])->where('attendance_date <=', $activeYear['end_date'])->orderBy('attendance_date', 'ASC')->findAll();
+                    $yearly_raw_data = $kehadiranModel
+                        ->whereIn('student_id', $student_ids)
+                        ->where('attendance_date >=', $activeYear['start_date'])
+                        ->where('attendance_date <=', $activeYear['end_date'])
+                        ->orderBy('attendance_date', 'ASC')
+                        ->findAll();
                 }
 
+                // Proses data bulanan untuk pivot
                 $pivotedData = [];
                 foreach ($students_in_class as $student) {
-                    $pivotedData[$student['nis']] = ['full_name' => $student['full_name'], 'student_id' => $student['id'], 'attendances' => []];
+                    $pivotedData[$student['nis']] = [
+                        'full_name' => $student['full_name'],
+                        'student_id' => $student['id'],
+                        'attendances' => []
+                    ];
                 }
                 foreach ($monthly_raw_data as $row) {
-                    // ... (logika pivot tidak berubah) ...
+                    $student_nis = '';
+                    foreach ($students_in_class as $student) {
+                        if ($student['id'] == $row['student_id']) {
+                            $student_nis = $student['nis'];
+                            break;
+                        }
+                    }
+                    if ($student_nis) {
+                        $pivotedData[$student_nis]['attendances'][$row['attendance_date']] = $row['status'];
+                    }
                 }
                 $data['reportData'] = $pivotedData;
 
-                // !! LOGIKA BARU: Proses data tahunan UNTUK POPUP, termasuk hitung total !!
+                // Proses data tahunan untuk detail popup
                 $detailedAttendance = [];
-                // Inisialisasi array detail
                 foreach ($student_ids as $id) {
                     $detailedAttendance[$id] = [
                         'records' => [],
                         'summary' => ['hadir' => 0, 'sakit' => 0, 'izin' => 0]
                     ];
                 }
-                // Isi data dan hitung total
                 foreach ($yearly_raw_data as $row) {
                     $detailedAttendance[$row['student_id']]['records'][] = $row;
                     $status = strtolower($row['status']);
@@ -85,12 +110,47 @@ class LaporanController extends BaseController
                 }
                 $data['detailedAttendance'] = $detailedAttendance;
             }
-
-            $period = new \DatePeriod(new \DateTime($start_date_month), new \DateInterval('P1D'), (new \DateTime($end_date_month))->modify('+1 day'));
-            foreach ($period as $value) {
-                $data['dateHeaders'][] = $value->format('Y-m-d');
-            }
         }
+
+        $period = new \DatePeriod(new \DateTime($start_date_month), new \DateInterval('P1D'), (new \DateTime($end_date_month))->modify('+1 day'));
+        foreach ($period as $value) {
+            $data['dateHeaders'][] = $value->format('Y-m-d');
+        }
+
+        // Ambil nama kelas yang dipilih untuk judul PDF
+        $selected_class = $class_id ? $kelasModel->find($class_id) : null;
+        $data['selected_class'] = $selected_class;
+
+        // Tambahkan kamus bulan untuk PDF
+        $data['bulanIndonesia'] = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
+        ];
+
+        // Logika untuk menentukan output: Web atau PDF
+        if ($this->request->getGet('export') === 'pdf' && $class_id) {
+            $dompdf = new \Dompdf\Dompdf();
+
+            $html = view('pages/laporan/kehadiran_pdf', $data);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'landscape');
+            $dompdf->render();
+
+            $filename = str_replace('/', '-', $selected_class['name']) . '-' . $month . '-' . $year . '.pdf';
+            $dompdf->stream($filename, ["Attachment" => false]);
+            exit();
+        }
+
         return view('pages/laporan/kehadiran', $data);
     }
 
@@ -281,106 +341,94 @@ class LaporanController extends BaseController
     }
 
     public function kegiatanPerKelas()
-    {
-        $kelasModel = new \App\Models\KelasModel();
-        $kegiatanModel = new \App\Models\KegiatanModel();
-        $enrollmentModel = new \App\Models\EnrollmentModel();
-        $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
+{
+    $kelasModel = new \App\Models\KelasModel();
+    $kegiatanModel = new \App\Models\KegiatanModel();
+    $enrollmentModel = new \App\Models\EnrollmentModel();
+    $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
 
-        $class_id = $this->request->getGet('class_id');
-        $month = $this->request->getGet('month') ?? date('m');
-        $year = $this->request->getGet('year') ?? date('Y');
+    // Ambil filter dari URL, default ke bulan ini
+    $class_id = $this->request->getGet('class_id');
+    $month = $this->request->getGet('month') ?? date('m');
+    $year = $this->request->getGet('year') ?? date('Y');
 
-        $start_date_month = "$year-$month-01";
-        $end_date_month = date("Y-m-t", strtotime($start_date_month));
+    // Hitung tanggal mulai dan akhir dari bulan/tahun yang dipilih
+    $start_date = "$year-$month-01";
+    $end_date = date("Y-m-t", strtotime($start_date));
 
-        $data = [
-            'classes' => $activeYear ? $kelasModel->where('academic_year_id', $activeYear['id'])->findAll() : [],
-            'selected_class_id' => $class_id,
-            'selected_month' => $month,
-            'selected_year' => $year,
-            'active_year' => $activeYear,
-            'pivotedData' => [],
-            'dateHeaders' => [],
-            'yearlySummary' => []
-        ];
+    $data = [
+        'classes' => $activeYear ? $kelasModel->where('academic_year_id', $activeYear['id'])->findAll() : [],
+        'selected_class_id' => $class_id,
+        'selected_month' => $month,
+        'selected_year' => $year,
+        'pivotedData' => [],
+        'dateHeaders' => []
+    ];
+    
+    // Ambil nama kelas yang dipilih untuk judul PDF
+    $data['selected_class'] = $class_id ? $kelasModel->find($class_id) : null;
+    // Tambahkan kamus bulan untuk PDF
+    $data['bulanIndonesia'] = [1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April', 5=>'Mei', 6=>'Juni', 7=>'Juli', 8=>'Agustus', 9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'];
 
-        if ($class_id && $activeYear) {
-            $students_in_class = $enrollmentModel
-                ->select('students.id, students.full_name, students.nis')
-                ->join('students', 'students.id = enrollments.student_id')
-                ->where('enrollments.class_id', $class_id)
-                ->where('enrollments.academic_year_id', $activeYear['id'])
+
+    if ($class_id) {
+        $students_in_class = $enrollmentModel
+            ->select('students.id, students.full_name, students.nis')
+            ->join('students', 'students.id = enrollments.student_id')
+            ->where('enrollments.class_id', $class_id)
+            ->where('enrollments.academic_year_id', $activeYear['id'])
+            ->findAll();
+        
+        if (!empty($students_in_class)) {
+            $student_ids = array_column($students_in_class, 'id');
+            
+            $raw_activities = $kegiatanModel
+                ->select('activities.student_id, activities.activity_date, activity_names.name as activity_name')
+                ->join('activity_names', 'activity_names.id = activities.activity_name_id')
+                ->whereIn('activities.student_id', $student_ids)
+                ->where('activities.activity_date >=', $start_date)
+                ->where('activities.activity_date <=', $end_date)
                 ->findAll();
 
-            if (!empty($students_in_class)) {
-                $student_ids = array_column($students_in_class, 'id');
-
-                // !! PERBAIKAN 1: Query bulanan sekarang mengambil nama kegiatan !!
-                $monthly_activities = $kegiatanModel
-                    ->select('activities.student_id, activities.activity_date, activity_names.name as activity_name')
-                    ->join('activity_names', 'activity_names.id = activities.activity_name_id')
-                    ->whereIn('student_id', $student_ids)
-                    ->where('activity_date >=', $start_date_month)
-                    ->where('activity_date <=', $end_date_month)
-                    ->findAll();
-
-                $yearly_activities = [];
-                if (!empty($activeYear['start_date']) && !empty($activeYear['end_date'])) {
-                    $yearly_activities = $kegiatanModel->select('activities.student_id, activities.activity_date, activity_names.name as activity_name')->join('activity_names', 'activity_names.id = activities.activity_name_id')->whereIn('student_id', $student_ids)->where('activity_date >=', $activeYear['start_date'])->where('activity_date <=', $activeYear['end_date'])->orderBy('activity_date', 'ASC')->findAll();
-                }
-
-                // Inisialisasi data pivot
-                $pivotedData = [];
-                foreach ($students_in_class as $student) {
-                    $pivotedData[$student['id']] = ['full_name' => $student['full_name'], 'daily_activities' => []];
-                }
-                // Proses data bulanan
-                foreach ($monthly_activities as $activity) {
-                    if (isset($pivotedData[$activity['student_id']])) {
-                        // !! PERBAIKAN 2: Ganti "Dummy" dengan data asli !!
-                        $pivotedData[$activity['student_id']]['daily_activities'][$activity['activity_date']]['details'][] = $activity['activity_name'];
-                    }
-                }
-                // Hitung total kegiatan harian
-                foreach ($pivotedData as &$studentData) {
-                    foreach ($studentData['daily_activities'] as &$dayData) {
-                        $dayData['count'] = count($dayData['details']);
-                    }
-                }
-                $data['pivotedData'] = $pivotedData;
-
-                // 4. Proses data tahunan untuk popup rangkuman
-                $yearlySummary = [];
-                // Inisialisasi array summary
-                foreach ($students_in_class as $student) {
-                    $yearlySummary[$student['id']] = ['total_count' => 0, 'activities_by_date' => []];
-                }
-                // Kelompokkan data tahunan
-                foreach ($yearly_activities as $row) {
-                    if (isset($yearlySummary[$row['student_id']])) {
-                        $yearlySummary[$row['student_id']]['activities_by_date'][$row['activity_date']][] = $row['activity_name'];
-                    }
-                }
-                // Hitung total untuk setiap siswa
-                foreach ($yearlySummary as &$summary) {
-                    $total = 0;
-                    foreach ($summary['activities_by_date'] as $activities_on_day) {
-                        $total += count($activities_on_day);
-                    }
-                    $summary['total_count'] = $total;
-                }
-                $data['yearlySummary'] = $yearlySummary;
+            $pivotedData = [];
+            foreach ($students_in_class as $student) {
+                $pivotedData[$student['id']] = ['full_name' => $student['full_name'], 'daily_activities' => []];
             }
-        }
 
-        // 5. Buat header tanggal bulanan
-        $period = new \DatePeriod(new \DateTime($start_date_month), new \DateInterval('P1D'), (new \DateTime($end_date_month))->modify('+1 day'));
-        foreach ($period as $value) {
-            $data['dateHeaders'][] = $value->format('Y-m-d');
-        }
+            foreach ($raw_activities as $activity) {
+                if (isset($pivotedData[$activity['student_id']])) {
+                    $pivotedData[$activity['student_id']]['daily_activities'][$activity['activity_date']]['details'][] = $activity['activity_name'];
+                }
+            }
 
-        return view('pages/laporan/kegiatan_kelas', $data);
+            foreach ($pivotedData as &$studentData) {
+                foreach ($studentData['daily_activities'] as &$dayData) {
+                    $dayData['count'] = count($dayData['details']);
+                }
+            }
+            $data['pivotedData'] = $pivotedData;
+        }
     }
+    
+    $period = new \DatePeriod( new \DateTime($start_date), new \DateInterval('P1D'), (new \DateTime($end_date))->modify('+1 day'));
+    foreach ($period as $value) { 
+        $data['dateHeaders'][] = $value->format('Y-m-d'); 
+    }
+
+    // Logika untuk menentukan output: Web atau PDF
+    if ($this->request->getGet('export') === 'pdf' && $class_id) {
+        $dompdf = new \Dompdf\Dompdf();
+        $html = view('pages/laporan/kegiatan_kelas_pdf', $data);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+        
+        $filename = 'laporan-kegiatan-' . str_replace('/', '-', $data['selected_class']['name']) . '-' . $month . '-' . $year . '.pdf';
+        $dompdf->stream($filename, ["Attachment" => false]);
+        exit();
+    }
+
+    return view('pages/laporan/kegiatan_kelas', $data);
+}
 
 }
