@@ -341,94 +341,102 @@ class LaporanController extends BaseController
     }
 
     public function kegiatanPerKelas()
-{
-    $kelasModel = new \App\Models\KelasModel();
-    $kegiatanModel = new \App\Models\KegiatanModel();
-    $enrollmentModel = new \App\Models\EnrollmentModel();
-    $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
+    {
+        $kelasModel = new \App\Models\KelasModel();
+        $kegiatanModel = new \App\Models\KegiatanModel();
+        $enrollmentModel = new \App\Models\EnrollmentModel();
+        $activeYear = (new \App\Models\TahunAjaranModel())->where('status', 'Aktif')->first();
 
-    // Ambil filter dari URL, default ke bulan ini
-    $class_id = $this->request->getGet('class_id');
-    $month = $this->request->getGet('month') ?? date('m');
-    $year = $this->request->getGet('year') ?? date('Y');
+        $class_id = $this->request->getGet('class_id');
+        $month = $this->request->getGet('month') ?? date('m');
+        $year = $this->request->getGet('year') ?? date('Y');
 
-    // Hitung tanggal mulai dan akhir dari bulan/tahun yang dipilih
-    $start_date = "$year-$month-01";
-    $end_date = date("Y-m-t", strtotime($start_date));
+        $start_date = "$year-$month-01";
+        $end_date = date("Y-m-t", strtotime($start_date));
 
-    $data = [
-        'classes' => $activeYear ? $kelasModel->where('academic_year_id', $activeYear['id'])->findAll() : [],
-        'selected_class_id' => $class_id,
-        'selected_month' => $month,
-        'selected_year' => $year,
-        'pivotedData' => [],
-        'dateHeaders' => []
-    ];
-    
-    // Ambil nama kelas yang dipilih untuk judul PDF
-    $data['selected_class'] = $class_id ? $kelasModel->find($class_id) : null;
-    // Tambahkan kamus bulan untuk PDF
-    $data['bulanIndonesia'] = [1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April', 5=>'Mei', 6=>'Juni', 7=>'Juli', 8=>'Agustus', 9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'];
+        $data = [
+            'classes' => $activeYear ? $kelasModel->where('academic_year_id', $activeYear['id'])->findAll() : [],
+            'selected_class_id' => $class_id,
+            'selected_month' => $month,
+            'selected_year' => $year,
+            'active_year' => $activeYear,
+            'pivotedData' => [],
+            'dateHeaders' => [],
+            'yearlySummary' => []
+        ];
 
+        // Siapkan data tambahan untuk PDF
+        $data['selected_class'] = $class_id ? $kelasModel->find($class_id) : null;
+        $data['bulanIndonesia'] = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
 
-    if ($class_id) {
-        $students_in_class = $enrollmentModel
-            ->select('students.id, students.full_name, students.nis')
-            ->join('students', 'students.id = enrollments.student_id')
-            ->where('enrollments.class_id', $class_id)
-            ->where('enrollments.academic_year_id', $activeYear['id'])
-            ->findAll();
-        
-        if (!empty($students_in_class)) {
-            $student_ids = array_column($students_in_class, 'id');
-            
-            $raw_activities = $kegiatanModel
-                ->select('activities.student_id, activities.activity_date, activity_names.name as activity_name')
-                ->join('activity_names', 'activity_names.id = activities.activity_name_id')
-                ->whereIn('activities.student_id', $student_ids)
-                ->where('activities.activity_date >=', $start_date)
-                ->where('activities.activity_date <=', $end_date)
-                ->findAll();
+        if ($class_id && $activeYear) {
+            $students_in_class = $enrollmentModel->select('students.id, students.full_name, students.nis')->join('students', 'students.id = enrollments.student_id')->where('enrollments.class_id', $class_id)->where('enrollments.academic_year_id', $activeYear['id'])->findAll();
 
-            $pivotedData = [];
-            foreach ($students_in_class as $student) {
-                $pivotedData[$student['id']] = ['full_name' => $student['full_name'], 'daily_activities' => []];
-            }
+            if (!empty($students_in_class)) {
+                $student_ids = array_column($students_in_class, 'id');
 
-            foreach ($raw_activities as $activity) {
-                if (isset($pivotedData[$activity['student_id']])) {
-                    $pivotedData[$activity['student_id']]['daily_activities'][$activity['activity_date']]['details'][] = $activity['activity_name'];
+                $monthly_activities = $kegiatanModel->select('activities.student_id, activities.activity_date, activity_names.name as activity_name')->join('activity_names', 'activity_names.id = activities.activity_name_id')->whereIn('student_id', $student_ids)->where('activity_date >=', $start_date)->where('activity_date <=', $end_date)->findAll();
+
+                $yearly_activities = [];
+                if (!empty($activeYear['start_date']) && !empty($activeYear['end_date'])) {
+                    $yearly_activities = $kegiatanModel->select('activities.student_id, activities.activity_date, activity_names.name as activity_name')->join('activity_names', 'activity_names.id = activities.activity_name_id')->whereIn('student_id', $student_ids)->where('activity_date >=', $activeYear['start_date'])->where('activity_date <=', $activeYear['end_date'])->orderBy('activity_date', 'ASC')->findAll();
                 }
-            }
 
-            foreach ($pivotedData as &$studentData) {
-                foreach ($studentData['daily_activities'] as &$dayData) {
-                    $dayData['count'] = count($dayData['details']);
+                $pivotedData = [];
+                foreach ($students_in_class as $student) {
+                    $pivotedData[$student['id']] = ['full_name' => $student['full_name'], 'daily_activities' => []];
                 }
+                foreach ($monthly_activities as $activity) {
+                    if (isset($pivotedData[$activity['student_id']])) {
+                        $pivotedData[$activity['student_id']]['daily_activities'][$activity['activity_date']]['details'][] = $activity['activity_name'];
+                    }
+                }
+                foreach ($pivotedData as &$studentData) {
+                    foreach ($studentData['daily_activities'] as &$dayData) {
+                        $dayData['count'] = count($dayData['details']);
+                    }
+                }
+                $data['pivotedData'] = $pivotedData;
+
+                $yearlySummary = [];
+                foreach ($students_in_class as $student) {
+                    $yearlySummary[$student['id']] = ['total_count' => 0, 'activities_by_date' => []];
+                }
+                foreach ($yearly_activities as $row) {
+                    if (isset($yearlySummary[$row['student_id']])) {
+                        $yearlySummary[$row['student_id']]['activities_by_date'][$row['activity_date']][] = $row['activity_name'];
+                    }
+                }
+                foreach ($yearlySummary as &$summary) {
+                    $total = 0;
+                    foreach ($summary['activities_by_date'] as $activities_on_day) {
+                        $total += count($activities_on_day);
+                    }
+                    $summary['total_count'] = $total;
+                }
+                $data['yearlySummary'] = $yearlySummary;
             }
-            $data['pivotedData'] = $pivotedData;
         }
-    }
-    
-    $period = new \DatePeriod( new \DateTime($start_date), new \DateInterval('P1D'), (new \DateTime($end_date))->modify('+1 day'));
-    foreach ($period as $value) { 
-        $data['dateHeaders'][] = $value->format('Y-m-d'); 
-    }
 
-    // Logika untuk menentukan output: Web atau PDF
-    if ($this->request->getGet('export') === 'pdf' && $class_id) {
-        $dompdf = new \Dompdf\Dompdf();
-        $html = view('pages/laporan/kegiatan_kelas_pdf', $data);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'landscape');
-        $dompdf->render();
-        
-        $filename = 'laporan-kegiatan-' . str_replace('/', '-', $data['selected_class']['name']) . '-' . $month . '-' . $year . '.pdf';
-        $dompdf->stream($filename, ["Attachment" => false]);
-        exit();
-    }
+        $period = new \DatePeriod(new \DateTime($start_date), new \DateInterval('P1D'), (new \DateTime($end_date))->modify('+1 day'));
+        foreach ($period as $value) {
+            $data['dateHeaders'][] = $value->format('Y-m-d');
+        }
 
-    return view('pages/laporan/kegiatan_kelas', $data);
-}
+        // !! LOGIKA EKSPOR PDF !!
+        if ($this->request->getGet('export') === 'pdf' && $class_id) {
+            $dompdf = new \Dompdf\Dompdf();
+            $html = view('pages/laporan/kegiatan_kelas_pdf', $data);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'landscape');
+            $dompdf->render();
+
+            $filename = 'laporan-kegiatan-' . str_replace('/', '-', $data['selected_class']['name']) . '-' . $month . '-' . $year . '.pdf';
+            $dompdf->stream($filename, ["Attachment" => false]);
+            exit();
+        }
+
+        return view('pages/laporan/kegiatan_kelas', $data);
+    }
 
 }

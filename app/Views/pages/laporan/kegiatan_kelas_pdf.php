@@ -26,6 +26,7 @@
     </style>
 </head>
 <body>
+    
     <table class="header-table">
         <?php $config = config('App'); ?>
         <tr><td style="text-align: center;"><div class="school-name"><?= $config->appName ?></div>
