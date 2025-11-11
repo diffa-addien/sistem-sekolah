@@ -50,8 +50,20 @@
                         <td class="px-4 py-3">
                             <div class="flex items-center text-sm">
                                 <div class="relative hidden w-10 h-10 mr-3 rounded-full md:block">
-                                    <img class="object-cover w-full h-full rounded-full shadow-md"
-                                        src="<?= base_url('uploads/photos/' . ($user['photo'] ?? 'default.png')) ?>" alt="Foto Profil">
+                                    <?php if (!empty($user['photo']) && file_exists(FCPATH . 'uploads/photos/' . $user['photo'])): ?>
+                                        <img class="object-cover w-full h-full rounded-full shadow-md"
+                                            src="<?= base_url('uploads/photos/' . esc($user['photo'])) ?>"
+                                            alt="Foto Profil"
+                                            loading="lazy"
+                                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <?php else: ?>
+                                        <div class="w-full h-full flex items-center justify-center rounded-full bg-purple-700 text-white text-sm font-semibold shadow-md">
+                                            <?= esc(strtoupper(substr($user['name'], 0, 1))) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div class="hidden absolute inset-0 flex items-center justify-center rounded-full bg-purple-700 text-white text-sm font-semibold">
+                                        <?= esc(strtoupper(substr($user['name'], 0, 1))) ?>
+                                    </div>
                                 </div>
                                 <div>
                                     <p class="font-semibold"><?= esc($user['name']) ?></p>

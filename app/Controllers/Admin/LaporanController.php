@@ -375,7 +375,13 @@ class LaporanController extends BaseController
             if (!empty($students_in_class)) {
                 $student_ids = array_column($students_in_class, 'id');
 
-                $monthly_activities = $kegiatanModel->select('activities.student_id, activities.activity_date, activity_names.name as activity_name')->join('activity_names', 'activity_names.id = activities.activity_name_id')->whereIn('student_id', $student_ids)->where('activity_date >=', $start_date)->where('activity_date <=', $end_date)->findAll();
+                $monthly_activities = $kegiatanModel
+                    ->select('activities.student_id, activities.activity_date, activities.created_at, activity_names.name as activity_name')
+                    ->join('activity_names', 'activity_names.id = activities.activity_name_id')
+                    ->whereIn('student_id', $student_ids)
+                    ->where('activity_date >=', $start_date)
+                    ->where('activity_date <=', $end_date)
+                    ->findAll();
 
                 $yearly_activities = [];
                 if (!empty($activeYear['start_date']) && !empty($activeYear['end_date'])) {
@@ -387,9 +393,20 @@ class LaporanController extends BaseController
                     $pivotedData[$student['id']] = ['full_name' => $student['full_name'], 'daily_activities' => []];
                 }
                 foreach ($monthly_activities as $activity) {
-                    if (isset($pivotedData[$activity['student_id']])) {
-                        $pivotedData[$activity['student_id']]['daily_activities'][$activity['activity_date']]['details'][] = $activity['activity_name'];
+                    if (!isset($pivotedData[$activity['student_id']])) {
+                        continue;
                     }
+
+                    if (!isset($pivotedData[$activity['student_id']]['daily_activities'][$activity['activity_date']])) {
+                        $pivotedData[$activity['student_id']]['daily_activities'][$activity['activity_date']] = [
+                            'details' => []
+                        ];
+                    }
+
+                    $pivotedData[$activity['student_id']]['daily_activities'][$activity['activity_date']]['details'][] = [
+                        'activity_name' => $activity['activity_name'],
+                        'created_at' => $activity['created_at']
+                    ];
                 }
                 foreach ($pivotedData as &$studentData) {
                     foreach ($studentData['daily_activities'] as &$dayData) {

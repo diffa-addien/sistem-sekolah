@@ -55,10 +55,16 @@
                         <td class="px-4 py-3">
                             <div class="flex items-center text-sm">
                                 <div class="relative w-12 h-12 me-2">
-                                    <img class="object-cover w-full h-full rounded-full shadow-md"
-                                        src="<?= base_url('uploads/photos/' . ($student['photo'] ?? 'default.png')) ?>"
-                                        alt="Foto Profil" loading="lazy"
-                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <?php if (!empty($student['photo']) && file_exists(FCPATH . 'uploads/photos/' . $student['photo'])): ?>
+                                        <img class="object-cover w-full h-full rounded-full shadow-md"
+                                            src="<?= base_url('uploads/photos/' . esc($student['photo'])) ?>"
+                                            alt="Foto Profil" loading="lazy"
+                                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <?php else: ?>
+                                        <div class="w-full h-full flex items-center justify-center rounded-full bg-sky-900 text-white text-sm font-semibold shadow-md">
+                                            <?= esc(strtoupper(substr($student['full_name'], 0, 1))) ?>
+                                        </div>
+                                    <?php endif; ?>
                                     <div
                                         class="hidden absolute inset-0 flex items-center justify-center rounded-full bg-sky-900 text-white text-sm font-semibold">
                                         <?= esc(strtoupper(substr($student['full_name'], 0, 1))) ?>

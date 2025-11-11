@@ -155,7 +155,12 @@ $bulanIndonesia = [
                         <template x-for="att in attendanceData">
                             <tr class="border-b">
                                 <td class="px-4 py-2" x-text="att.formatted_date"></td>
-                                <td class="px-4 py-2" x-text="att.status"></td>
+                                <td class="px-4 py-2">
+                                    <span
+                                        :class="statusClass(att.status)"
+                                        x-text="att.status === 'Alfa' ? '-' : att.status.charAt(0)">
+                                    </span>
+                                </td>
                                 <td class="px-4 py-2" x-text="att.check_in_time || '-'"></td>
                                 <td class="px-4 py-2" x-text="att.check_out_time || '-'"></td>
                             </tr>
@@ -204,6 +209,19 @@ $bulanIndonesia = [
             },
             close() {
                 this.isOpen = false;
+            },
+            statusClass(status) {
+                const base = 'px-2 py-1 text-xs font-bold leading-tight rounded-full ';
+                if (status === 'Hadir') {
+                    return base + 'bg-green-100 text-green-700';
+                }
+                if (status === 'Sakit') {
+                    return base + 'bg-yellow-100 text-yellow-700';
+                }
+                if (status === 'Izin') {
+                    return base + 'bg-blue-100 text-blue-700';
+                }
+                return base + 'bg-gray-100 text-gray-700';
             }
         }
     }

@@ -39,6 +39,28 @@ Input Kehadiran Siswa
       <input type="hidden" name="class_id" value="<?= esc($selected_class_id) ?>">
       <input type="hidden" name="date" value="<?= esc($selected_date) ?>">
 
+      <?php $statuses = ['Hadir', 'Sakit', 'Izin']; ?>
+
+      <div class="flex flex-wrap items-end gap-3 justify-between mb-4">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-700">Aksi Massal</h3>
+          <p class="text-xs text-gray-500">Terapkan status ke semua siswa sekaligus.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <label for="bulk-status" class="text-sm text-gray-700">Set Semua ke</label>
+          <select id="bulk-status" class="block w-40 text-sm rounded-lg border-gray-300">
+            <option value="">Pilih Status</option>
+            <?php foreach ($statuses as $statusOption) : ?>
+              <option value="<?= $statusOption ?>"><?= $statusOption ?></option>
+            <?php endforeach; ?>
+          </select>
+          <button type="button" id="apply-bulk-status"
+            class="px-3 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-1">
+            Terapkan
+          </button>
+        </div>
+      </div>
+
       <div class="w-full overflow-hidden rounded-lg">
         <div class="w-full overflow-x-auto">
           <table class="w-full whitespace-no-wrap">
@@ -71,10 +93,9 @@ Input Kehadiran Siswa
                   </td>
                   <td class="px-4 py-3 text-sm">
                     <div class="flex items-center justify-center space-x-2 sm:space-x-4">
-                      <?php $statuses = ['Hadir', 'Sakit', 'Izin']; ?>
                       <?php foreach ($statuses as $status) : ?>
                         <label class="inline-flex items-center">
-                          <input type="radio" class="w-4 h-4 text-sky-600" name="status[<?= $student['id'] ?>]" value="<?= $status ?>" <?= ($status === $current_status) ? 'checked' : '' ?>>
+                          <input type="radio" class="w-4 h-4 text-sky-600" name="status[<?= $student['id'] ?>]" value="<?= $status ?>" data-status="<?= $status ?>" <?= ($status === $current_status) ? 'checked' : '' ?>>
                           <span class="ml-2"><?= $status ?></span>
                         </label>
                       <?php endforeach; ?>
@@ -98,4 +119,29 @@ Input Kehadiran Siswa
   </div>
 <?php endif; ?>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var bulkSelect = document.getElementById('bulk-status');
+    var applyButton = document.getElementById('apply-bulk-status');
+
+    if (!bulkSelect || !applyButton) {
+      return;
+    }
+
+    applyButton.addEventListener('click', function () {
+      var selectedStatus = bulkSelect.value;
+      if (!selectedStatus) {
+        return;
+      }
+
+      var radios = document.querySelectorAll('input[type="radio"][data-status="' + selectedStatus + '"]');
+      radios.forEach(function (radio) {
+        radio.checked = true;
+      });
+    });
+  });
+</script>
 <?= $this->endSection() ?>

@@ -177,7 +177,21 @@ $bulanIndonesia = [
       openDaily(studentName, date, activitiesJson) {
         this.modalTitle = `Detail Kegiatan: ${studentName}`;
         this.modalSubtitle = date;
-        this.modalItems = JSON.parse(activitiesJson.replace(/&quot;/g, '"'));
+        const parsed = JSON.parse(activitiesJson.replace(/&quot;/g, '"'));
+        this.modalItems = parsed.map(item => {
+          const activityName = item.activity_name || item.name || '';
+          if (!item.created_at) {
+            return activityName;
+          }
+
+          const parsedDate = new Date((item.created_at || '').replace(' ', 'T'));
+          if (isNaN(parsedDate.getTime())) {
+            return activityName;
+          }
+
+          const timeString = parsedDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+          return `${activityName} (${timeString})`;
+        });
         this.isDailyOpen = true;
       },
       openYearly(studentName, studentId, summaryJson) {
