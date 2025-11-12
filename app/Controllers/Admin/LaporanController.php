@@ -385,7 +385,14 @@ class LaporanController extends BaseController
 
                 $yearly_activities = [];
                 if (!empty($activeYear['start_date']) && !empty($activeYear['end_date'])) {
-                    $yearly_activities = $kegiatanModel->select('activities.student_id, activities.activity_date, activity_names.name as activity_name')->join('activity_names', 'activity_names.id = activities.activity_name_id')->whereIn('student_id', $student_ids)->where('activity_date >=', $activeYear['start_date'])->where('activity_date <=', $activeYear['end_date'])->orderBy('activity_date', 'ASC')->findAll();
+                    $yearly_activities = $kegiatanModel
+                        ->select('activities.student_id, activities.activity_date, activities.created_at, activity_names.name as activity_name')
+                        ->join('activity_names', 'activity_names.id = activities.activity_name_id')
+                        ->whereIn('student_id', $student_ids)
+                        ->where('activity_date >=', $activeYear['start_date'])
+                        ->where('activity_date <=', $activeYear['end_date'])
+                        ->orderBy('activity_date', 'ASC')
+                        ->findAll();
                 }
 
                 $pivotedData = [];
@@ -421,7 +428,10 @@ class LaporanController extends BaseController
                 }
                 foreach ($yearly_activities as $row) {
                     if (isset($yearlySummary[$row['student_id']])) {
-                        $yearlySummary[$row['student_id']]['activities_by_date'][$row['activity_date']][] = $row['activity_name'];
+                        $yearlySummary[$row['student_id']]['activities_by_date'][$row['activity_date']][] = [
+                            'activity_name' => $row['activity_name'],
+                            'created_at' => $row['created_at']
+                        ];
                     }
                 }
                 foreach ($yearlySummary as &$summary) {

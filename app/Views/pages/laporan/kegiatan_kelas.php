@@ -153,7 +153,7 @@ $bulanIndonesia = [
             <template x-for="[date, activities] in Object.entries(yearlyItems)">
               <tr>
                 <td class="px-4 py-2 font-semibold" x-text="formatYearlyDate(date)"></td>
-                <td class="px-4 py-2" x-text="activities.join(', ')"></td>
+                <td class="px-4 py-2" x-text="Array.isArray(activities) ? activities.join(', ') : ''"></td>
               </tr>
             </template>
           </tbody>
@@ -199,7 +199,30 @@ $bulanIndonesia = [
         this.modalSubtitle = 'Tahun Ajaran <?= esc($active_year['year'] ?? '') ?>';
         this.studentId = studentId;
         let summaryData = JSON.parse(summaryJson.replace(/&quot;/g, '"'));
-        this.yearlyItems = summaryData.activities_by_date || {};
+
+        const formattedYearlyItems = {};
+        const rawYearlyItems = summaryData.activities_by_date || {};
+
+        Object.entries(rawYearlyItems).forEach(([dateKey, activities]) => {
+          formattedYearlyItems[dateKey] = (activities || []).map(item => {
+            const activityName = item.activity_name || item.name || '';
+            if (!item.created_at) {
+              return activityName;
+            }
+
+            const parsedDate = new Date(item.created_at.replace(' ', 'T'));
+            if (isNaN(parsedDate.getTime())) {
+              return activityName;
+            }
+
+            const timeString = parsedDate
+              .toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+              .replace('.', ':');
+            return `${activityName} (${timeString})`;
+          });
+        });
+
+        this.yearlyItems = formattedYearlyItems;
         this.yearlyTotal = summaryData.total_count || 0;
         this.isYearlyOpen = true;
       }
