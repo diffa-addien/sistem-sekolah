@@ -109,7 +109,18 @@ function activityModal() {
         isOpen: false, studentName: '', date: '', activities: [],
         open(studentName, date, activitiesJson) {
             this.studentName = studentName; this.date = date;
-            this.activities = JSON.parse(activitiesJson.replace(/&quot;/g, '"'));
+            const parsed = JSON.parse(activitiesJson.replace(/&quot;/g, '"'));
+            this.activities = parsed.map(item => {
+                if (typeof item === 'string') return item;
+                let timeStr = '';
+                if (item.time) {
+                    const d = new Date(item.time.replace(' ', 'T'));
+                    if (!isNaN(d.getTime())) {
+                        timeStr = ' (' + d.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}).replace('.', ':') + ')';
+                    }
+                }
+                return item.name + timeStr;
+            });
             this.isOpen = true;
         },
         close() { this.isOpen = false; }

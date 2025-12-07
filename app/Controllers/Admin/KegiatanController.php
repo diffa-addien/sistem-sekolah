@@ -86,7 +86,7 @@ class KegiatanController extends BaseController
             $student_ids = array_column($data['students'], 'id');
             if (!empty($student_ids)) {
                 $raw_activities = $kegiatanModel
-                    ->select('activities.student_id, activity_names.name as activity_name')
+                    ->select('activities.student_id, activities.created_at, activity_names.name as activity_name')
                     ->join('activity_names', 'activity_names.id = activities.activity_name_id')
                     ->whereIn('activities.student_id', $student_ids)
                     ->where('activities.activity_date', $date)
@@ -95,7 +95,10 @@ class KegiatanController extends BaseController
                 // Proses dan kelompokkan data kegiatan per siswa
                 $activityData = [];
                 foreach ($raw_activities as $activity) {
-                    $activityData[$activity['student_id']]['details'][] = $activity['activity_name'];
+                    $activityData[$activity['student_id']]['details'][] = [
+                        'name' => $activity['activity_name'],
+                        'time' => $activity['created_at']
+                    ];
                 }
                 // Hitung total kegiatan per siswa
                 foreach ($activityData as &$studentData) {
