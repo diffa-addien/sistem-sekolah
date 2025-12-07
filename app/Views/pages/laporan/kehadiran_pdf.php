@@ -91,8 +91,13 @@
       background-color: #2196F3;
     }
 
-    .alfa {
-      background-color: #8f8f8fff;
+    .alpa {
+      background-color: #f44336; /* Use a red color for Alpa in PDF */
+    }
+    
+    .unknown {
+      background-color: #e0e0e0;
+      color: #757575;
     }
   </style>
 </head>
@@ -128,8 +133,11 @@
             <td class="student-name"><?= esc($data['full_name']) ?></td>
             <?php foreach ($dateHeaders as $date): ?>
               <td>
-                <?php $status = $data['attendances'][$date] ?? 'Alfa'; ?>
-                <div class="badge <?= strtolower($status) ?>"><?= substr(($status == "Alfa" ? "-" : $status), 0, 1) ?></div>
+                <?php $status = $data['attendances'][$date] ?? null; 
+                      $badge_class = ($status) ? strtolower($status) : 'unknown';
+                      $status_label = ($status) ? substr($status, 0, 1) : '-';
+                ?>
+                <div class="badge <?= $badge_class ?>"><?= $status_label ?></div>
               </td>
             <?php endforeach; ?>
           </tr>

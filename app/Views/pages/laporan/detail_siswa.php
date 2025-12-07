@@ -133,7 +133,12 @@
                             </div>
                             <ul class="divide-y">
                                 <?php foreach ($activities as $act): ?>
-                                    <li class="px-4 py-3 text-sm text-gray-800"><?= esc($act['activity_name']) ?></li>
+                                    <li class="px-4 py-3 text-sm text-gray-800">
+                                        <?= esc($act['activity_name']) ?>
+                                        <span class="text-xs text-gray-500 ml-2">
+                                            <?= $act['created_at'] ? date('H:i', strtotime($act['created_at'])) : '' ?>
+                                        </span>
+                                    </li>
                                 <?php endforeach; ?>
                             </ul>
                         </div>

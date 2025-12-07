@@ -68,7 +68,7 @@
       'Hadir' => 'bg-green-100 text-green-800',
       'Sakit' => 'bg-yellow-100 text-yellow-800',
       'Izin' => 'bg-blue-100 text-blue-800',
-      'Alfa' => 'bg-red-100 text-red-800',
+      'Alpa' => 'bg-red-100 text-red-800',
     ];
     ?>
     <div class="grid grid-cols-7 gap-2 text-center text-sm font-semibold text-gray-600 mb-2">

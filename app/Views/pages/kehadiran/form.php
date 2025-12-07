@@ -39,7 +39,7 @@ Input Kehadiran Siswa
       <input type="hidden" name="class_id" value="<?= esc($selected_class_id) ?>">
       <input type="hidden" name="date" value="<?= esc($selected_date) ?>">
 
-      <?php $statuses = ['Hadir', 'Sakit', 'Izin']; ?>
+      <?php $statuses = ['Hadir', 'Sakit', 'Izin', 'Alpa']; ?>
 
       <div class="flex flex-wrap items-end gap-3 justify-between mb-4">
         <div>
